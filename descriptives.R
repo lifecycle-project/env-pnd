@@ -20,9 +20,6 @@ library(dsHelper)
 library(forcats)
 library(here)
 
-source("/home/tim/useful-code-r/code/themes/theme-std.R")
-source("/home/tim/useful-code-r/code/themes/lc-names-neat.R")
-
 conns <- datashield.login(logindata, restore = "env_pnd_9")
 ################################################################################
 # 1. Define variable groups  
@@ -43,14 +40,17 @@ lu.vars <- c("bdens300_preg", "bdens300_1", "urbgr_preg", "urbgr_1",
              "landuseshan300_1", "frichness300_preg", "frichness300_1", 
              "fdensity300_preg", "fdensity300_1", "agrgr_preg")
 
-out.vars <- "ppd"
-
 ################################################################################
 # 2. Extract stats  
 ################################################################################
-descriptives <- dh.getStats(
+exposures.desc <- dh.getStats(
   df = "analysis_df", 
-  vars = c(sep.vars, pol.vars, nat.vars, lu.vars, out.vars)
+  vars = c(sep.vars, pol.vars, nat.vars, lu.vars)
+)
+
+outcome.desc <- dh.getStats(
+  df = "analysis_df", 
+  vars = "ppd"
 )
 
 ################################################################################
@@ -60,7 +60,8 @@ descriptives <- dh.getStats(
 # We do it like this because we can't make markdown files in the analysis 
 # server so instead we do it locally.
 
-save(descriptives, file = here("data", "descriptives.RData"))
+save(exposures.desc, file = here("data", "descriptives.RData"))
+save(exposures.desc, file = here("data", "descriptives.RData"))
 
 
 
