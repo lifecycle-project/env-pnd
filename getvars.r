@@ -34,11 +34,16 @@ nonrep.vars <- list(
   "child_no", "preg_no", "mother_id", "outcome", "con_anomalies", "birth_month", 
   "bdens100_preg", "bdens300_preg", "fdensity300_preg", "frichness300_preg", 
   "landuseshan300_preg", "walkability_mean_preg", "agrgr_preg", "natgr_preg", 
-  "urbgr_preg"), 
+  "urbgr_preg", "urb_area_id"), 
   tables = c(
     "alspac/2_1_core_1_2/non_rep",
     #"lc_dnbc_core_2_1.2_1_core_non_rep_tcadman_2020-lc19", 
-    "lc_eden_core_2_1.Project22_non_rep", 
+    #"lc_eden_core_2_1.Project22_non_rep", 
+    #"lc_eden_core_2_1.Project22_non_rep", 
+    #"lc_eden_core_2_1.Project22_non_rep", 
+    "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
+    "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
+    "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
     "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
     "lc_genr_core_2_2.2_1_core_non_rep_TC _ECCNLC202053", 
     "lc_moba_core_2_1.2_1_core_2021_1_non_rep_environment_depression", 
@@ -60,7 +65,7 @@ trirep.vars <- list(
   tables = c(
     "alspac/2_1_core_1_2/trimester",
     "2_1_core_trimester_rep_tcadman_2021-lc08", 
-    "lc_eden_core_2_1.Project22_trimester_rep", 
+    #"lc_eden_core_2_1.Project22_trimester_rep", 
     #"lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
     "lc_genr_core_2_2.2_1_core_trimester_rep_TC_ECCNLC202053", 
     #"lc_moba_core_2_1.2_1_core_2021_1_non_rep_environment_depression", 
@@ -79,7 +84,12 @@ yearrep.vars <- list(
   tables = c(
     "alspac/2_1_core_1_3/yearly_rep", 
     #"lc_dnbc_core_2_1.2_1_core_yearly_rep_tcadman_2020-lc19", 
-    "lc_eden_core_2_1.Project22_yearly_rep",
+    #"lc_eden_core_2_1.Project22_yearly_rep",
+    #"lc_eden_core_2_1.Project22_yearly_rep",
+    #"lc_eden_core_2_1.Project22_yearly_rep",
+    "lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
+    "lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
+    "lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
     "lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
     "lc_genr_core_2_2.2_1_core_yearly_rep_TC_ECCNLC202053", 
     "lc_moba_core_2_1.2_1_core_2021_1_yearly_rep_environment_depression",
@@ -95,6 +105,8 @@ datashield.assign(
   value = nonrep.vars$tables, 
   variables = nonrep.vars$variables, 
   conns = conns)
+
+ds.table("nonrep$urb_area_id")
 
 ## ---- Trimester repeated -----------------------------------------------------
 
@@ -376,7 +388,7 @@ conns <- datashield.login(logindata, restore = "env_pnd_7")
 exp.vars <- c(
   "areases_tert_1", "areases_quint_1", "fam_splitup_1", "no2_1", 
   "pm25_1", "lden_1", "ndvi300_1", "green_dist_1", "blue_dist_1", 
-  "age_years_1", "cohab_1", "bdens100_1", "bdens300_1", "urbgr_1",
+  "bdens100_1", "bdens300_1", "urbgr_1",
   "natgr_1", "agrgr_1", "walkability_mean_1", "landuseshan300_1",
   "frichness300_1", "fdensity300_1", "no2_preg", "pm25_preg", 
   "lden_preg", "ndvi300_preg", "green_dist_preg", "blue_dist_preg", 
@@ -393,7 +405,7 @@ cov.vars <- c(
 "preg_alc_unit", "breastfed_any", "breastfed_ever",  "cohort_id", 
 "preg_dia", "preg_ht", "ga_bj", "prepreg_dep", "child_id", "child_no", 
 "preg_no", "mother_id", "outcome", "con_anomalies", "birth_month", 
-coh_dummy$cohort)
+"age_years_1", "cohab_1", coh_dummy$cohort)
 
 
 ## ---- Now we create vars indicating whether any non-missing values are present
@@ -456,6 +468,29 @@ var_index %>%
 
 ## ---- Save progress ----------------------------------------------------------
 datashield.workspace_save(conns, "env_pnd_9")
+conns <- datashield.login(logindata, restore = "env_pnd_9")
+
+################################################################################
+# 12. Create sub-cohorts for inma and eden  
+################################################################################
+tibble(
+  cohort = c("inma_gip", "inma_sab", "inma_val"),
+  value = c(1102, 1103, 1104)) %>%
+  pmap(function(cohort, value){
+    
+    ds.dataFrameSubset(
+      df.name = "analysis_df", 
+      V1.name = "analysis_df$urb_area_id",
+      V2.name = value,
+      Boolean.operator = "==",
+      newobj = "analysis_df", 
+      datasources = conns[cohort])
+  
+    })
+
+## ---- Save progress ----------------------------------------------------------
+datashield.workspace_save(conns, "env_pnd_10")
+conns <- datashield.login(logindata, restore = "env_pnd_10")
 
 
-
+ds.dataFrameSubset

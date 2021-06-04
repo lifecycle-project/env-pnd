@@ -20,6 +20,8 @@ library(dsHelper)
 library(forcats)
 library(here)
 
+ls("package:dsBaseClient")
+
 conns <- datashield.login(logindata, restore = "env_pnd_9")
 ################################################################################
 # 1. Define variable groups  
@@ -60,8 +62,85 @@ outcome.desc <- dh.getStats(
 # We do it like this because we can't make markdown files in the analysis 
 # server so instead we do it locally.
 
-save(exposures.desc, file = here("data", "descriptives.RData"))
-save(exposures.desc, file = here("data", "descriptives.RData"))
+save(exposures.desc, file = here("data", "exp_desc.RData"))
+save(outcome.desc, file = here("data", "out_desc.RData"))
+
+################################################################################
+# 4. Heat map analysis  
+################################################################################
+
+## ---- Create two subsets with only the required variables --------------------
+
+## Pregnancy
+dh.dropCols(
+  df = "analysis_df", 
+  vars = c(
+    "no2_preg", "pm25_preg", "lden_preg", "ndvi300_preg", "green_dist_preg", 
+    "blue_dist_preg", "bdens100_preg", "bdens300_preg", "fdensity300_preg", 
+    "frichness300_preg", "landuseshan300_preg", "walkability_mean_preg", 
+    "agrgr_preg", "natgr_preg", "urbgr_preg"),
+  comp_var = "child_id",
+  type = "keep",
+  new_df_name = "heat_preg")
+
+# Birth to 12 months
+dh.dropCols(
+  df = "analysis_df", 
+  vars = c(
+    "areases_tert_1", "areases_quint_1", "fam_splitup_1", "no2_1", 
+    "pm25_1", "lden_1", "ndvi300_1", "green_dist_1", "blue_dist_1", 
+    "age_years_1", "cohab_1", "bdens100_1", "bdens300_1", "urbgr_1",
+    "natgr_1", "agrgr_1", "walkability_mean_1", "landuseshan300_1",
+    "frichness300_1", "fdensity300_1"),
+  comp_var = "child_id",
+  type = "keep",
+  new_df_name = "heat_0_12")
+
+## ---- Correlation matrices ---------------------------------------------------
+exp_cor_preg <- ds.cor(
+  x = "heat_preg", 
+  type = "split"
+)
+
+exp_cor_0_12 <- ds.cor(
+  x = "heat_0_12", 
+  type = "split"
+)
+  
+save(exp_cor_preg, file = here("data", "exp_cor_preg.RData"))
+save(exp_cor_0_12, file = here("data", "exp_cor_0_12.RData"))
+
+################################################################################
+# Box plots using Demetris' function  
+################################################################################
+
+## ---- Variables which exist for all cohorts ----------------------------------
+violin_all.data <- dh.getAnonPlotData(
+  df = "analysis_df", 
+  vars = c(
+    "no2_preg", "pm25_preg", "ndvi300_preg", "ndvi300_1", "green_dist_preg", 
+    "green_dist_1", "blue_dist_preg", "blue_dist_1"))
+
+## ---- Variables not present for DNBC -----------------------------------------
+violin_built.data <- dh.getAnonPlotData(
+  df = "analysis_df", 
+  vars = c(
+  "bdens100_preg", "bdens100_1", "bdens300_preg", "bdens300_1", 
+  "fdensity300_preg", "fdensity300_1", "frichness300_preg", "frichness300_1", 
+  "landuseshan300_preg", "landuseshan300_1", "walkability_mean_preg", 
+  "walkability_mean_1", "agrgr_preg", "agrgr_1", "natgr_preg", "natgr_1", 
+  "urbgr_preg", "urbgr_1"), 
+  conns = conns[c("alspac", "genr", "moba", "ninfea")])
+
+## ---- Lden -------------------------------------------------------------------
+violin_noise.data <- dh.getAnonPlotData(
+  df = "analysis_df", 
+  vars = "lden_preg", 
+  conns = conns[c("inma", "genr", "moba", "ninfea")])
+
+violin_out <- c(violin_all.data, violin_built.data, violin_noise.data)
+
+save(v_preg.data, file = here("data", "violin_out.RData"))
 
 
 
