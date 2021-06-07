@@ -152,16 +152,34 @@ dh.renameVars(
   names = tibble(oldvar = "ndvi300_preg", newvar = "ndvi_p")
 )
 
-ndvi_ref <- tibble(
-  df = rep("analysis_df", 4),
-  subset_var = rep("ndvi_p", 4), 
-  low_val = seq(0, 0.75, 0.25),
-  high_val = seq(0.25, 1, 0.25), 
-  new_df_name = paste0("ndvi_", high_val)
-)
+ndvi_ninfea <- tibble(
+  cohort = "ninfea",
+  low_val = seq(0, 0.4, 0.1), 
+  high_val = seq(0.1, 0.5, 0.1))
+
+ndvi_moba <- tibble(
+  cohort = "moba",
+  low_val = seq(0.3, 0.6, 0.1), 
+  high_val = seq(0.4, 0.7, 0.1))
+
+ndvi_alspac <- tibble(
+  cohort = "alspac",
+  low_val = seq(0.2, 0.5, 0.1), 
+  high_val = seq(0.3, 0.6, 0.1))
+
+ndvi_genr <- tibble(
+  cohort = "genr",
+  low_val = seq(0.2, 0.5, 0.1), 
+  high_val = seq(0.3, 0.6, 0.1))
+
+ndvi_ref <- bind_rows(ndvi_ninfea, ndvi_moba, ndvi_alspac, ndvi_genr) %>%
+  mutate(
+    df = "analysis_df", 
+    subset_var = "ndvi_p", 
+    new_df_name = paste0("ndvi_p_", high_val))
 
 ndvi_ref %>% 
-  pmap(function(df, subset_var, low_val, high_val, new_df_name){
+  pmap(function(cohort, low_val, high_val, df, subset_var, new_df_name){
     
     dh.subsetBetween(
       df = df,
@@ -171,29 +189,38 @@ ndvi_ref %>%
       new_df_name = new_df_name)
   })
 
+datashield.workspace_save(conns, "env_pnd_9a")
+conns  <- datashield.login(logindata, restore = "env_pnd_9a")
+
 ################################################################################
 # 7. Stratified odds ratios  
 ################################################################################
 ppd_coh <- c("alspac", "genr", "moba", "ninfea")
 
-ndvi_strat <- c("ndvi_0.4", "ndvi_0.6", "ndvi_0.8") %>% 
-  map(
-    ~ds.glmSLMA(
-      formula = "ppd~ndvi_p", 
+ndvi_strat <- ndvi_ref %>%
+  pmap(function(new_df_name, cohort){
+    ds.glmSLMA(
+      formula = "ppd~ndvi300_preg", 
       family = "binomial", 
-      dataName  = ., 
-      datasources = conns[ppd_coh])
-  )
-
- %>%
+      dataName  = new_df_name, 
+      datasources = conns[cohort])
+  })
+  
+ndvi_out <- ndvi_strat %>%
   map(
-      
-    dh.lmTab(
-      model = ndvi_strat[[3]], 
+    ~dh.lmTab(
+      model = ., 
       type = "slma", 
-      coh_names = ppd_coh,
+      coh_names = ndvi_ref %>% pull(cohort),
       direction = "wide", 
       ci_format = "separate")
+  ) %>%
+  set_names(ndvi.vars) %>%
+  bind_rows(.id = "range") %>% 
+  mutate(across(est:uppci, ~exp(.x)))
+
+save(ndvi_out, file = here("data", "ndvi_strat.RData"))
+    
     
 ))
 
@@ -201,6 +228,7 @@ ndvi_strat <- c("ndvi_0.4", "ndvi_0.6", "ndvi_0.8") %>%
 
 
 ds.colnames("analysis_df")
+
 
 
 
