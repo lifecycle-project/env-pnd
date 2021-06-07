@@ -111,7 +111,7 @@ save(exp_cor_preg, file = here("data", "exp_cor_preg.RData"))
 save(exp_cor_0_12, file = here("data", "exp_cor_0_12.RData"))
 
 ################################################################################
-# Box plots using Demetris' function  
+# 5. Box plots using Demetris' function  
 ################################################################################
 
 ## ---- Variables which exist for all cohorts ----------------------------------
@@ -140,7 +140,68 @@ violin_noise.data <- dh.getAnonPlotData(
 
 violin_out <- c(violin_all.data, violin_built.data, violin_noise.data)
 
-save(v_preg.data, file = here("data", "violin_out.RData"))
+save(violin_out, file = here("data", "violin_out.RData"))
+
+################################################################################
+# 6. Create subsets for stratified odds ratios  
+################################################################################
+
+## ---- NDVI -------------------------------------------------------------------
+dh.renameVars(
+  df = "analysis_df", 
+  names = tibble(oldvar = "ndvi300_preg", newvar = "ndvi_p")
+)
+
+ndvi_ref <- tibble(
+  df = rep("analysis_df", 4),
+  subset_var = rep("ndvi_p", 4), 
+  low_val = seq(0, 0.75, 0.25),
+  high_val = seq(0.25, 1, 0.25), 
+  new_df_name = paste0("ndvi_", high_val)
+)
+
+ndvi_ref %>% 
+  pmap(function(df, subset_var, low_val, high_val, new_df_name){
+    
+    dh.subsetBetween(
+      df = df,
+      subset_var = subset_var,
+      low_val = low_val,
+      high_val = high_val,
+      new_df_name = new_df_name)
+  })
+
+################################################################################
+# 7. Stratified odds ratios  
+################################################################################
+ppd_coh <- c("alspac", "genr", "moba", "ninfea")
+
+ndvi_strat <- c("ndvi_0.4", "ndvi_0.6", "ndvi_0.8") %>% 
+  map(
+    ~ds.glmSLMA(
+      formula = "ppd~ndvi_p", 
+      family = "binomial", 
+      dataName  = ., 
+      datasources = conns[ppd_coh])
+  )
+
+ %>%
+  map(
+      
+    dh.lmTab(
+      model = ndvi_strat[[3]], 
+      type = "slma", 
+      coh_names = ppd_coh,
+      direction = "wide", 
+      ci_format = "separate")
+    
+))
+
+
+
+
+ds.colnames("analysis_df")
+
 
 
 
