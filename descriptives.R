@@ -55,6 +55,9 @@ outcome.desc <- dh.getStats(
   vars = "ppd"
 )
 
+outcome.desc$categorical %>% filter(cohort == "moba" & variable == "ppd")
+
+%in% c("green_dist_preg", "blue_dist_preg"))
 ################################################################################
 # 3. Write descriptives  
 ################################################################################
@@ -142,6 +145,135 @@ violin_out <- c(violin_all.data, violin_built.data, violin_noise.data)
 
 save(violin_out, file = here("data", "violin_out.RData"))
 
+
+################################################################################
+# 6. Exposure - outcome associations: model formulae  
+################################################################################
+cohorts <- names(conns)
+
+## ---- Natural spaces ---------------------------------------------------------
+nat.mod <- list(
+  ndvi = list(
+    outcome = "ppd",
+    exposure = "ndvi300_preg",
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("genr", "inma") == FALSE]), 
+  green_dist = list(
+    outcome = "ppd",
+    exposure = "green_dist_preg",
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("genr", "inma") == FALSE]), 
+  blue_dist = list(
+    outcome = "ppd",
+    exposure = "blue_dist_preg", 
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("genr", "inma") == FALSE]))
+
+## ---- Polution ---------------------------------------------------------------
+pol.mod <- list(
+  no2 = list(
+    outcome = "ppd",
+    exposure = "no2_preg",
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("inma") == FALSE]), 
+  pm25 = list(
+    outcome = "ppd",
+    exposure = "pm25_preg",
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("inma") == FALSE]))
+
+## ---- Grey space -------------------------------------------------------------
+grey.mod <- list(
+  bdens = list(
+    outcome = "ppd",
+    exposure = "bdens300_preg",
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("inma") == FALSE]), 
+  fdens = list(
+    outcome = "ppd",
+    exposure = "fdensity300_preg",
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+  frich = list(
+    outcome = "ppd",
+    exposure = "frichness300_preg",
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+  landuse = list(
+    outcome = "ppd",
+    exposure = "landuseshan300_preg",
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+  walk = list(
+    outcome = "ppd",
+    exposure = "walkability_mean_preg",
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+  lu_agr = list(
+    outcome = "ppd",
+    exposure = "agrgr_preg",
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+  lu_forst = list(
+    outcome = "ppd",
+    exposure = "natgr_preg",
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+  lu_urb_green = list(
+    outcome = "ppd",
+    exposure = "urbgr_preg",
+    covariates = "",
+    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+  
+
+"agrgr_preg", "natgr_preg", "urbgr_preg", 
+
+
+
+dh.glmWrap <- function(x, type, dummy_suff = "_dummy", data = "analysis_df"){
+  
+  if(type == "ipd"){
+    
+    out <- ds.glm(
+      formula = x$model,
+      data = "analysis_df", 
+      family = "binomial", 
+      datasources = conns[x$cohorts])
+    
+  }
+  
+  
+  else if(type == "slma"){
+    
+    out <- ds.glmSLMA(
+      formula = x$model,
+      dataName = "analysis_df", 
+      family = "binomial",
+      datasources = conns[x$cohorts])
+  }
+  
+  return(out)
+}
+
+
+################################################################################
+# 7. Run models  
+################################################################################
+
+## ---- Natural spaces ---------------------------------------------------------
+nat.fit <- nat.mod %>%
+  map(dh.makeGlmForm, type = "slma") %>% 
+  map(dh.glmWrap, type = "slma")
+
+
+## ---- Polution ---------------------------------------------------------------
+pol.fit <- pol.mod %>%
+  map(dh.makeGlmForm, type = "slma") %>% 
+  map(dh.glmWrap, type = "slma")
+
+
+
+
 ################################################################################
 # 6. Create subsets for stratified odds ratios  
 ################################################################################
@@ -154,8 +286,8 @@ dh.renameVars(
 
 ndvi_ninfea <- tibble(
   cohort = "ninfea",
-  low_val = seq(0, 0.4, 0.1), 
-  high_val = seq(0.1, 0.5, 0.1))
+  low_val = seq(0.1, 0.4, 0.1), 
+  high_val = seq(0.2, 0.5, 0.1))
 
 ndvi_moba <- tibble(
   cohort = "moba",
@@ -169,8 +301,8 @@ ndvi_alspac <- tibble(
 
 ndvi_genr <- tibble(
   cohort = "genr",
-  low_val = seq(0.2, 0.5, 0.1), 
-  high_val = seq(0.3, 0.6, 0.1))
+  low_val = seq(0.3, 0.5, 0.1), 
+  high_val = seq(0.4, 0.6, 0.1))
 
 ndvi_ref <- bind_rows(ndvi_ninfea, ndvi_moba, ndvi_alspac, ndvi_genr) %>%
   mutate(
@@ -189,45 +321,46 @@ ndvi_ref %>%
       new_df_name = new_df_name)
   })
 
+ndvi_ref %>% 
+  pmap(function(cohort, new_df_name, ...){
+    
+    ds.dim(
+      x = new_df_name, 
+      datasources = conns[cohort]
+    )
+    })
+  
 datashield.workspace_save(conns, "env_pnd_9a")
 conns  <- datashield.login(logindata, restore = "env_pnd_9a")
 
 ################################################################################
 # 7. Stratified odds ratios  
 ################################################################################
-ppd_coh <- c("alspac", "genr", "moba", "ninfea")
-
 ndvi_strat <- ndvi_ref %>%
-  pmap(function(new_df_name, cohort){
+  pmap(function(new_df_name, cohort, ...){
     ds.glmSLMA(
-      formula = "ppd~ndvi300_preg", 
+      formula = "ppd ~ ndvi300_preg", 
       family = "binomial", 
       dataName  = new_df_name, 
       datasources = conns[cohort])
   })
   
-ndvi_out <- ndvi_strat %>%
-  map(
-    ~dh.lmTab(
-      model = ., 
+ndvi_out <- list(models = ndvi_strat, cohort =  ndvi_ref %>% pull(cohort)) %>%
+  pmap(function(models, cohort){
+      dh.lmTab(
+      model = models, 
       type = "slma", 
-      coh_names = ndvi_ref %>% pull(cohort),
+      coh_names = cohort,
       direction = "wide", 
       ci_format = "separate")
-  ) %>%
-  set_names(ndvi.vars) %>%
+  }) %>% set_names(ndvi_ref %>% pull(new_df_name)) %>%
   bind_rows(.id = "range") %>% 
   mutate(across(est:uppci, ~exp(.x)))
 
 save(ndvi_out, file = here("data", "ndvi_strat.RData"))
     
     
-))
 
-
-
-
-ds.colnames("analysis_df")
 
 
 

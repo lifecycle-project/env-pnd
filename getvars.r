@@ -46,7 +46,7 @@ nonrep.vars <- list(
     "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
     "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
     "lc_genr_core_2_2.2_1_core_non_rep_TC _ECCNLC202053", 
-    "lc_moba_core_2_1.2_1_core_2021_1_non_rep_environment_depression", 
+    "lc_moba_core_2_1.2_1_core_2021_2_non_rep_environment_depression", 
     "lc_ninfea_core_2_1.p12_tcadman"))
 
 ## ---- Trimester repeated -----------------------------------------------------
