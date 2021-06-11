@@ -15,7 +15,7 @@ library(magrittr)
 library(tidyr)
 library(stringr)
 #library(remotes)
-#install_github("lifecycle-project/ds-helper", ref = "maintenance")
+#install_github("lifecycle-project/ds-helper")
 library(dsHelper)
 library(forcats)
 library(here)
@@ -55,16 +55,12 @@ outcome.desc <- dh.getStats(
   vars = "ppd"
 )
 
-outcome.desc$categorical %>% filter(cohort == "moba" & variable == "ppd")
-
-%in% c("green_dist_preg", "blue_dist_preg"))
 ################################################################################
 # 3. Write descriptives  
 ################################################################################
 
 # We do it like this because we can't make markdown files in the analysis 
 # server so instead we do it locally.
-
 save(exposures.desc, file = here("data", "exp_desc.RData"))
 save(outcome.desc, file = here("data", "out_desc.RData"))
 
@@ -218,15 +214,15 @@ grey.mod <- list(
     outcome = "ppd",
     exposure = "natgr_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+    cohorts = cohorts[cohorts %in% c("inma", "moba") == FALSE]),
   lu_urb_green = list(
     outcome = "ppd",
     exposure = "urbgr_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+    cohorts = cohorts[cohorts %in% c("inma") == FALSE]))
   
 
-"agrgr_preg", "natgr_preg", "urbgr_preg", 
+ds.summary("analysis_df$natgr_preg")
 
 
 
@@ -272,7 +268,78 @@ pol.fit <- pol.mod %>%
   map(dh.glmWrap, type = "slma")
 
 
+## ---- Grey space -------------------------------------------------------------
+grey.fit <- grey.mod %>%
+  map(dh.makeGlmForm, type = "slma") %>% 
+  map(dh.glmWrap, type = "slma")
 
+
+test_a <- ds.glmSLMA(
+  formula = "ppd~green_dist_preg",
+  data = "analysis_df", 
+  family = "binomial", 
+  datasources = conns[c("alspac", "ninfea")])
+
+test_b <- ds.glm(
+  formula = "ppd~green_dist_preg",
+  data = "analysis_df", 
+  family = "binomial", 
+  datasources = conns[c("alspac", "ninfea")])
+
+test_c <- ds.cor("analysis_df$ppd", "analysis_df$green_dist_preg", datasources = conns[c("alspac", "ninfea")]) 
+  
+  ds.summary("analysis_df$green_dist_preg", datasources = conns[c("alspac", "genr", "ninfea")])
+ds.class("analysis_df$ppd")
+  
+  ds.summary("analysis_df$alspac_dummy")
+  ds.table("analysis_df$ppd", datasources = conns[c("alspac", "genr", "ninfea")])
+
+################################################################################
+# 8. Get coefficients for plots   
+################################################################################
+
+## ---- Natural spaces ---------------------------------------------------------
+nat.out <- list(fit = nat.fit, model = nat.mod) %>%
+  pmap(function(fit, model){
+    
+    dh.lmTab(
+      model = fit,
+      type = "slma", 
+      coh_names = model$cohorts, 
+      ci_format = "separate", 
+      direction = "wide") 
+    
+  }) %>% bind_rows(.id = "exposure")
+
+## ---- Polution ---------------------------------------------------------------
+pol.out <- list(fit = pol.fit, model = pol.mod) %>%
+  pmap(function(fit, model){
+    
+    dh.lmTab(
+      model = fit,
+      type = "slma", 
+      coh_names = model$cohorts, 
+      ci_format = "separate", 
+      direction = "wide") 
+    
+  }) %>% bind_rows(.id = "exposure")
+
+## ---- Grey spaces ------------------------------------------------------------
+grey.out <- list(fit = grey.fit, model = grey.mod) %>%
+  pmap(function(fit, model){
+    
+    dh.lmTab(
+      model = fit,
+      type = "slma", 
+      coh_names = model$cohorts, 
+      ci_format = "separate", 
+      direction = "wide") 
+    
+  }) %>% bind_rows(.id = "exposure")
+
+## ---- Combine and output -----------------------------------------------------
+single_reg.out <- bind_rows(nat.out, pol.out, grey.out)
+save(single_reg.out, file = here("data", "single_reg.RData"))
 
 ################################################################################
 # 6. Create subsets for stratified odds ratios  

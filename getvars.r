@@ -34,17 +34,17 @@ nonrep.vars <- list(
   "child_no", "preg_no", "mother_id", "outcome", "con_anomalies", "birth_month", 
   "bdens100_preg", "bdens300_preg", "fdensity300_preg", "frichness300_preg", 
   "landuseshan300_preg", "walkability_mean_preg", "agrgr_preg", "natgr_preg", 
-  "urbgr_preg", "urb_area_id"), 
+  "urbgr_preg", "urb_area_id", "lden_c_preg"), 
   tables = c(
     "alspac/2_1_core_1_2/non_rep",
-    #"lc_dnbc_core_2_1.2_1_core_non_rep_tcadman_2020-lc19", 
+    "lc_dnbc_core_2_2.2_2_core_non_rep_tcadman_2021-lc08", 
     #"lc_eden_core_2_1.Project22_non_rep", 
     #"lc_eden_core_2_1.Project22_non_rep", 
     #"lc_eden_core_2_1.Project22_non_rep", 
     "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
-    "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
-    "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
-    "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
+    #"lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
+    #"lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
+    #"lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
     "lc_genr_core_2_2.2_1_core_non_rep_TC _ECCNLC202053", 
     "lc_moba_core_2_1.2_1_core_2021_2_non_rep_environment_depression", 
     "lc_ninfea_core_2_1.p12_tcadman"))
@@ -67,7 +67,7 @@ trirep.vars <- list(
     "2_1_core_trimester_rep_tcadman_2021-lc08", 
     #"lc_eden_core_2_1.Project22_trimester_rep", 
     #"lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
-    "lc_genr_core_2_2.2_1_core_trimester_rep_TC_ECCNLC202053", 
+    "lc_genr_core_2_2.2_1_core_trimester_rep_TC_ECCNLC202053" 
     #"lc_moba_core_2_1.2_1_core_2021_1_non_rep_environment_depression", 
     #"lc_ninfea_core_2_1.p12_tcadman"
     )
@@ -80,17 +80,17 @@ yearrep.vars <- list(
     "no2_", "pm25_", "lden_", "ndvi300_", "green_dist_", "blue_dist_", 
     "age_years", "cohab_", "bdens100_", "bdens300_", "urbgr_", "natgr_", 
     "agrgr_", "walkability_mean_", "landuseshan300_", "frichness300_", 
-    "fdensity300_"), 
+    "fdensity300_", "lden_c_"), 
   tables = c(
     "alspac/2_1_core_1_3/yearly_rep", 
-    #"lc_dnbc_core_2_1.2_1_core_yearly_rep_tcadman_2020-lc19", 
+    "lc_dnbc_core_2_2.2_2_core_yearly_rep_tcadman_2021-lc08", 
     #"lc_eden_core_2_1.Project22_yearly_rep",
     #"lc_eden_core_2_1.Project22_yearly_rep",
     #"lc_eden_core_2_1.Project22_yearly_rep",
     "lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
-    "lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
-    "lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
-    "lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
+    #"lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
+    #"lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
+    #"lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
     "lc_genr_core_2_2.2_1_core_yearly_rep_TC_ECCNLC202053", 
     "lc_moba_core_2_1.2_1_core_2021_1_yearly_rep_environment_depression",
     "lc_ninfea_core_2_1.p12_tcadman_yearly_rep"))
@@ -277,7 +277,7 @@ ds.reShape(
               "no2_", "pm25_", "lden_", "ndvi300_", "green_dist_", "blue_dist_", 
               "age_years", "cohab_", "bdens100_", "bdens300_", "urbgr_", "natgr_", 
               "agrgr_", "walkability_mean_", "landuseshan300_", "frichness300_", 
-              "fdensity300_"), 
+              "fdensity300_", "lden_c_"), 
   direction = "wide", 
   newobj = "baseline_wide")
 
@@ -305,7 +305,8 @@ old_new <- tribble(
   "walkability_mean_.0", "walkability_mean_1",
   "landuseshan300_.0", "landuseshan300_1",
   "frichness300_.0", "frichness300_1",
-  "fdensity300_.0", "fdensity300_1")    
+  "fdensity300_.0", "fdensity300_1"
+  "lden_c_.0", "lden_c_1")    
   
 dh.renameVars(
   df = "baseline_wide", 
@@ -394,7 +395,7 @@ exp.vars <- c(
   "lden_preg", "ndvi300_preg", "green_dist_preg", "blue_dist_preg", 
   "bdens100_preg", "bdens300_preg", "fdensity300_preg", "frichness300_preg", 
   "landuseshan300_preg", "walkability_mean_preg", "agrgr_preg", "natgr_preg", 
-  "urbgr_preg") 
+  "urbgr_preg", "lden_c_preg", "lden_c_1") 
   
 out.vars <- "ppd"
 
