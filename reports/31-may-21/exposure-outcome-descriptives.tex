@@ -1,0 +1,424 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% I've greyed this out so I can just define myself below
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={Environment \& postnatal depression descriptive statistics},
+            pdfauthor={Tim Cadman},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{12pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+
+  \title{Environment \& postnatal depression descriptive statistics}
+    \author{Tim Cadman}
+      \date{31st May 2021}
+
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage{float}
+\floatplacement{figure}{H}
+\usepackage{subcaption}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This is where I customise the template %
+
+% Set margins
+\usepackage[left=35mm,top=14mm,right=14mm,bottom=21mm]{geometry}
+
+% Define colour for use in table strip
+\usepackage{xcolor}
+\colorlet{stripcol}{customcol!5!}
+
+% Define font size levels
+\newcommand{\fonta}{\fontsize{24}{20}\selectfont}
+\newcommand{\fontb}{\fontsize{19}{21}\selectfont}
+\newcommand{\fontc}{\fontsize{16}{19}\selectfont}
+\newcommand{\fontd}{\fontsize{13}{16}\selectfont}
+
+% Get specific fonts that I need
+\usepackage{fontspec}
+\setmainfont[
+ BoldFont={AkzidenzGroteskBE-Md}, 
+ ItalicFont={AkzidenzGroteskBE-It}
+ ]{AkzidenzGroteskBE-Light}
+
+\usepackage{fontspec}
+\newfontfamily\headingfont[]{Arnhem-Bold}
+
+% Format title
+\usepackage{titling}
+\setlength{\droptitle}{-5.5em} % Move title up page
+
+\pretitle{\begin{flushleft}\fonta\headingfont\color{customcol}}
+\posttitle{\par\end{flushleft}}
+
+% Gap between title and author
+\renewcommand\maketitlehookb{\vspace{-2em}}
+
+% Format author
+\preauthor{\begin{flushleft}\fontc}
+\postauthor{\par\end{flushleft}}
+
+% Gap between author and date
+\renewcommand\maketitlehookc{\vspace{-3em}}
+
+% Format date
+\predate{\begin{flushleft}\fontc}
+\postdate{\par\end{flushleft}}
+
+% Gap between date and table of contents
+\renewcommand\maketitlehookd{\vspace{5em}}
+
+% Remove ToC header
+\makeatletter
+\renewcommand\tableofcontents{%
+    \@starttoc{toc}%
+}
+\makeatother
+
+% Format section headings
+\usepackage{titlesec}
+
+\titleformat{\section}
+    {\color{customcol}\vspace{20pt}\titlerule[0.7pt]\vspace{-7pt}\headingfont\fontb\bfseries\raggedright}
+    {\thesection}{0.5em}
+    {\headingfont}
+
+\titleformat*{\subsection}{\fontd\bfseries\raggedright}
+\titleformat*{\subsubsection}{\fontd\itshape\raggedright}
+
+% Spacing after titles
+\titlespacing*{\section}{0pt}{19.2pt plus 1ex minus .2ex}{8pt plus .2ex}
+\titlespacing*{\subsection}{0pt}{10pt plus 1ex minus .2ex}{-7pt plus .2ex}
+\titlespacing*{\subsubsection}{0pt}{10pt plus 1ex minus .2ex}{-7pt plus .2ex}
+
+
+% Format Table of Contents headings
+\usepackage{titletoc}
+\contentsmargin[4cm]{2em} % Affects right text wrap
+
+\titlecontents{section}
+              [1.3em] % Left margin
+              {\vspace{0.5em}} % Space between lines
+              {\bfseries\fontd\contentslabel{6mm}} 
+              {\hspace*{0em}}
+              {\titlerule*[0pc]{.}\contentspage} %\titlerule controls dots
+\titlecontents{subsection}
+              [4em] 
+              {\vspace{-1em}}
+              {\fontd\contentslabel{9mm}}
+              {\hspace*{0em}}
+              {\titlerule*[1pc]{.}\contentspage}
+
+% Change colours of links
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks = true,
+    linkcolor = customcol,
+    citecolor = customcol,
+    urlcolor = customcol,
+    linktocpage = TRUE % Change links to be page numbers not the header
+}
+
+% Format table and figure captions
+\usepackage{caption}
+\renewcommand{\footnotesize}{\fontd\itshape\selectfont}
+
+\captionsetup{tableposition = top}
+
+\captionsetup[table]{font=footnotesize,
+format=plain,
+justification=RaggedRight,
+singlelinecheck=false,
+labelsep=colon,
+belowskip = 10pt}
+
+\captionsetup[figure]{labelsep=colon,
+format=plain,
+font=footnotesize,
+justification=RaggedRight,
+singlelinecheck=false,
+aboveskip = 10pt}
+
+% Remove extra spacing for bullets and numbered lists
+\usepackage{enumitem}
+\setlist[enumerate]{itemsep=0pt, topsep=0pt, parsep=0pt, partopsep=0pt}
+\setlist[itemize]{itemsep=0pt, topsep=0pt, parsep=0pt, partopsep=0pt}
+
+% Set maths font
+\setmathfont(Latin){AkzidenzGroteskBE-Light}
+
+% End of my custom format
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\maketitle
+
+{
+
+
+\setcounter{tocdepth}{2}
+
+\tableofcontents
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Set properties of body text
+\raggedright
+\fontd
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+I've just put together some basic plots of each environmental exposure along with the
+postnatal depression outcome. I've split the environmental exposures into two time
+periods where available (i) pregnancy, (ii) birth - 12 months. You'll see from the
+descriptives there is almost no difference between the two exposures for most variables.
+
+I've also looked at the correlations between environmental variables.
+
+\hypertarget{natural-spaces}{%
+\section{Natural spaces}\label{natural-spaces}}
+
+\hypertarget{ndvi-300m-buffer}{%
+\subsection{NDVI (300m buffer)}\label{ndvi-300m-buffer}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/ndvi-1.pdf}
+
+\hypertarget{distance-to-nearest-green-spaces-5000m2}{%
+\subsection{\texorpdfstring{Distance to nearest green spaces \textgreater{} 5000m\textsuperscript{2}}{Distance to nearest green spaces \textgreater{} 5000m2}}\label{distance-to-nearest-green-spaces-5000m2}}
+
+There's definitely something wrong with GEN-R data. Here is the data for the
+other cohorts:
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/green-dist-1.pdf}
+
+And here is GEN-R data
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{desc\_clean}\SpecialCharTok{$}\NormalTok{continuous }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(variable }\SpecialCharTok{==} \StringTok{"green\_dist"} \SpecialCharTok{\&}\NormalTok{ cohort }\SpecialCharTok{==} \StringTok{"genr"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(cohort, time, mean, std.dev)}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{distance-to-nearest-blue-spaces-5000m2}{%
+\subsection{\texorpdfstring{Distance to nearest blue spaces \textgreater{} 5000m\textsuperscript{2}}{Distance to nearest blue spaces \textgreater{} 5000m2}}\label{distance-to-nearest-blue-spaces-5000m2}}
+
+Again, something not right with GEN-R data
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/blue-dist-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{desc\_clean}\SpecialCharTok{$}\NormalTok{continuous }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(variable }\SpecialCharTok{==} \StringTok{"blue\_dist"} \SpecialCharTok{\&}\NormalTok{ cohort }\SpecialCharTok{==} \StringTok{"genr"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(cohort, time, mean, std.dev)}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{air-polution}{%
+\section{Air polution}\label{air-polution}}
+
+\hypertarget{mean-no2-in-pregnancy}{%
+\subsection{\texorpdfstring{Mean NO\textsubscript{2} in pregnancy}{Mean NO2 in pregnancy}}\label{mean-no2-in-pregnancy}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/no2-preg-1.pdf}
+
+\hypertarget{mean-pm2.5-in-pregnancy}{%
+\subsection{\texorpdfstring{Mean PM\textsubscript{2.5} in pregnancy}{Mean PM2.5 in pregnancy}}\label{mean-pm2.5-in-pregnancy}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/pm25-preg-1.pdf}
+
+\hypertarget{mean-day-evening-night-traffic-noise}{%
+\section{Mean day-evening-night traffic noise}\label{mean-day-evening-night-traffic-noise}}
+
+This isn't available for ALSPAC\\
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/lden-1.pdf}
+
+\hypertarget{land-use}{%
+\section{Land use}\label{land-use}}
+
+\hypertarget{mean-buildling-density}{%
+\subsection{Mean buildling density}\label{mean-buildling-density}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/lu-building-1.pdf}
+
+\hypertarget{percentage-of-urban-green-land-use}{%
+\subsection{Percentage of urban green land use}\label{percentage-of-urban-green-land-use}}
+
+Big difference between MoBa and other cohorts - does this look like an error?\\
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/lu-green-1.pdf}
+
+\hypertarget{percentage-of-forest-land-use}{%
+\subsection{Percentage of forest land use}\label{percentage-of-forest-land-use}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/lu-forest-1.pdf}
+
+\hypertarget{walkability-index}{%
+\subsection{Walkability index}\label{walkability-index}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/lu-walk-1.pdf}
+
+\hypertarget{land-use-shannons-evenness-index}{%
+\subsection{Land use (Shannon's evenness index)}\label{land-use-shannons-evenness-index}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/lu-shannon-1.pdf}
+
+\hypertarget{facilities-richness}{%
+\subsection{Facilities richness}\label{facilities-richness}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/lu-fac-rich-1.pdf}
+
+\hypertarget{facilities-density}{%
+\subsection{Facilities density}\label{facilities-density}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/lu-fac-dens-1.pdf}
+
+\hypertarget{correlations-between-exposures}{%
+\section{Correlations between exposures}\label{correlations-between-exposures}}
+
+To avoid overload I have just plotted correlations between the pregnancy exposures. It's
+easy to add the exposures in the first year of life if you want to see them too.
+
+\hypertarget{alspac}{%
+\subsection{ALSPAC}\label{alspac}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\hypertarget{eden}{%
+\subsection{EDEN}\label{eden}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\hypertarget{inma}{%
+\subsection{INMA}\label{inma}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/unnamed-chunk-6-1.pdf}
+
+\hypertarget{gen-r}{%
+\subsection{GEN-R}\label{gen-r}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/unnamed-chunk-7-1.pdf}
+
+\hypertarget{moba}{%
+\subsection{MoBa}\label{moba}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/unnamed-chunk-8-1.pdf}
+
+\hypertarget{ninfea}{%
+\subsection{NINFEA}\label{ninfea}}
+
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/unnamed-chunk-9-1.pdf}
+
+\hypertarget{postnatal-depression}{%
+\section{Postnatal depression}\label{postnatal-depression}}
+
+You can see something is clearly miscoded for MoBa - I will contact them about this.
+I am working with Luise to code the DNBC variables.
+\includegraphics{exposure-outcome-descriptives_files/figure-latex/unnamed-chunk-10-1.pdf}
+
+
+\end{document}

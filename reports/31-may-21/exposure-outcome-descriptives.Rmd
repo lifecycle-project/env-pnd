@@ -1,0 +1,534 @@
+---
+title: "Urban environment & postnatal depression: descriptive statistics"
+date: 2nd June 2021
+author: Tim Cadman
+subparagraph: true
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{wrapfig}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+- \usepackage{titlesec}
+- \usepackage{caption}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \usepackage{subcaption}
+- \definecolor{customcol}{RGB}{38, 70, 83}
+
+output: 
+ bookdown::pdf_document2:
+  latex_engine: xelatex
+  template: "/Users/timcadman/OneDrive - University of Bristol/repos/useful-code-r/code/reports/khl_5.tex"
+  fig_caption: yes
+  toc_depth: 1
+---
+```{r settings, echo = FALSE}
+options(datashield.progress = FALSE)
+options(datashield.progress.clear = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(results = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(comment = NA, tidy=FALSE, fig.pos = 'H')
+options(knitr.duplicate.label = "allow")
+options(knitr.table.format = "latex")
+```
+
+```{r}
+library(GGally)   
+library(showtext)
+library(kableExtra)
+
+source("https://raw.githubusercontent.com/timcadman/useful-code-r/master/code/themes/theme-std.R")
+source("https://raw.githubusercontent.com/timcadman/useful-code-r/master/code/themes/lc-names-neat.R")
+
+load(here("data", "exp_desc.RData"))
+load(here("data", "out_desc.RData"))
+
+load(here("data", "exp_cor_0_12.RData"))
+load(here("data", "exp_cor_preg.RData"))
+
+theme_bar <- theme(
+  legend.position = "none",
+  panel.grid.major.y=element_line(colour="grey"), 
+  panel.grid.major.x=element_line(colour="white"),
+  axis.title.x=element_blank(),
+  axis.ticks.x=element_blank()
+)
+
+theme_cor <- theme(
+  plot.background = element_rect(fill =scales::alpha("#CCCCCC", 0.3)),  #Background outside of plot
+  plot.title = element_text(family = "avenir-book", hjust = 0.5, vjust=0, size=12, face="bold"), #Plot title, thought don't tend to use
+  text=element_text(family = "avenir-book", size=9), #General text 
+  axis.title.y = element_text(family = "avenir-book", size=14, margin = margin(t = 0, r = 10, b = 0, l = 0)), #Axis labels
+  axis.title.x = element_text(family = "avenir-book", size=14, margin = margin(t = 10, r = 0, b = 0, l = 0)),
+  axis.text.x = element_text(family = "avenir-book", size=11, margin = margin(t = 4, r=0, b=0, l=0), colour="black"), #Axis text
+  axis.text.y = element_text(family = "avenir-book", size=11, margin = margin(t = 0, r=4, b=0, l=0), colour="black"),
+  strip.text.x = element_text(family = "avenir-book", size = 8, face = "bold"),
+  legend.background= element_rect(fill=scales::alpha("#CCCCCC", 0.03)), #Legend background colour
+  legend.title=element_text(family = "avenir-book", size=8, face="bold"), #Legend title
+  legend.text=element_text(family = "avenir-book", size=8), #Legend text
+  legend.position="right", #Legend position
+  legend.direction="vertical", #Legend stacking
+  legend.justification = "left", #Left justify legend
+  legend.key.width = unit(3, "line"), #Make amount of line displayed in legend longer
+  legend.margin=margin(t=0.2, r=0, b=0.2, l=0, unit="cm")) #Margin around legend
+
+showtext_auto()
+
+```
+
+```{r render, eval = FALSE, echo = FALSE}
+rmarkdown::render(
+  input = "./reports/31-may-21/exposure-outcome-descriptives.Rmd", 
+  output_file = "env-pnd-descriptives-june-21.pdf", envir = globalenv())
+```
+
+
+```{r, echo = FALSE}
+time_labs <- c("Birth to 12 months", "Pregnancy")
+
+desc_clean <- exposures.desc %>%
+  map(
+    ~separate(, 
+              data = .,
+              col = variable, 
+              sep = "_(?=[^_]*$)", 
+              into = c("variable", "time"))
+  ) %>%
+  map(
+    ~mutate(
+      .data = ., 
+      time = factor(time, labels = time_labs, ordered = TRUE))
+  ) %>%
+  map(
+    ~mutate(
+      .data = ., 
+      time = fct_relevel(time, rev(time_labs)))
+  ) %>%
+  map(
+    ~left_join(., names_neat, by = "cohort")
+  ) %>%  
+  map(
+    ~mutate(
+      .data = .,
+      cohort_neat = fct_relevel(
+        cohort_neat, 
+        c("MoBa", "GENR", "ALSPAC", "EDEN", "NINFEA", "INMA")))
+  )
+
+```
+
+\newpage
+
+# Overview
+I've put together some basic plots of each environmental exposure and also the
+postnatal depression outcome. I've split the environmental exposures into two time 
+periods where available: (i) pregnancy, (ii) birth - 12 months. You'll see from the 
+descriptives there is very little differences in values across the two time periods.
+
+I've also shown the the correlations between environmental variables.  
+
+Luise is still working on the DNBC environmental data - she's encountered some issues with
+the upload that she's working with Sido to fix.
+
+# Natural spaces
+
+## NDVI (300m buffer)
+```{r ndvi, fig.showtext = TRUE}
+showtext_auto()
+
+desc_clean$continuous %>%
+  filter(variable == "ndvi300" & cohort != "combined") %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~time, ncol = 1) +
+  ylab("NDVI") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 0.8)) +
+  scale_fill_manual(values = palette_std) + 
+  theme_std + 
+  theme_bar
+```
+
+\newpage
+
+## Distance to nearest green spaces > 5000m^2^
+There's definitely something wrong with GEN-R data. Here is the data for the 
+cohorts excluding GEN-R:  
+
+```{r green-dist}
+desc_clean$continuous %>%
+  filter(
+    variable == "green_dist" & !cohort %in% c("genr", "combined")) %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~time, ncol = 1) +
+  ylab("Distance (m)") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 400)) +
+  scale_fill_manual(values = palette_std[c(1, 3:6)]) + 
+  theme_std + 
+  theme_bar
+
+```
+
+And here is GEN-R data:
+```{r green-dist-genr, results = TRUE}
+desc_clean$continuous %>%
+  filter(variable == "green_dist" & cohort == "genr") %>%
+  select(Cohort = cohort, Time = time, Mean = mean, Std.dev = std.dev) %>%
+  kbl() %>% 
+  kable_styling(full_width = FALSE, position = "left") %>%
+  collapse_rows(valign = "top")
+```
+
+\newpage
+
+## Distance to nearest blue spaces > 5000m^2^
+Again, something not right with GEN-R data...
+```{r blue-dist}
+desc_clean$continuous %>%
+  filter(
+    variable == "blue_dist" & !cohort %in% c("genr", "combined")) %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~time, ncol = 1) +
+  ylab("Distance (m)") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 2000)) +
+  scale_fill_manual(values = palette_std[c(1, 3:6)]) + 
+  theme_std + 
+  theme_bar
+```
+
+```{r blue-dist-genr, results = TRUE}
+desc_clean$continuous %>%
+  filter(variable == "blue_dist" & cohort == "genr") %>%
+  select(Cohort = cohort, Time = time, Mean = mean, Std.dev = std.dev) %>%
+  kbl() %>% 
+  kable_styling(full_width = FALSE, position = "left") %>%
+  collapse_rows(valign = "top")
+```
+
+\newpage
+
+# Air pollution
+There only appears to be pregnancy data - do you think this is correct?  
+
+## Mean NO~2~ in pregnancy
+```{r no2-preg}
+desc_clean$continuous %>%
+  filter(variable == "no2" & cohort != "combined") %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  ylab("N02 (microgram / m3)") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 80)) +
+  scale_fill_manual(values = palette_std) + 
+  theme_std + 
+  theme_bar
+```
+
+\newpage
+
+## Mean PM~2.5~ in pregnancy  
+
+```{r pm25-preg}
+desc_clean$continuous %>%
+  filter(variable == "pm25" & cohort != "combined") %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  ylab("PM2.5 (microgram / m3)") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 40)) +
+  scale_fill_manual(values = palette_std) + 
+  theme_std + 
+  theme_bar
+```
+
+\newpage
+
+# Road traffic noise
+## Mean day-evening-night traffic noise
+This isn't available for ALSPAC  
+
+```{r lden}
+desc_clean$continuous %>%
+  filter(
+    variable == "lden" & cohort != "combined") %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~time, ncol = 1) +
+  ylab("Noise (dBA)") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 80)) +
+  scale_fill_manual(values = palette_std[c(1:2, 4:6)]) + 
+  theme_std + 
+  theme_bar
+```
+
+\newpage
+
+# Land use
+I'm waiting on the built environment variables from INMA. I had to send an additional request as they weren't included in the original application (they were suggested later by Payam)  
+
+## Mean buildling density
+```{r lu-building}
+desc_clean$continuous %>%
+  filter(variable == "bdens300" & !cohort %in% c("combined", "inma")) %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~time, ncol = 1) +
+  ylab("Density (m2 / km2)") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 750000)) +
+  scale_fill_manual(values = palette_std) + 
+  theme_std + 
+  theme_bar
+```
+
+\newpage
+
+## Percentage of urban green land use
+Big difference between MoBa and other cohorts - does this look like an error?  
+
+```{r lu-green}
+desc_clean$continuous %>%
+  filter(variable == "natgr" & !cohort %in% c("combined", "inma")) %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~time, ncol = 1) +
+  ylab("Percentage") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 50)) +
+  scale_fill_manual(values = palette_std) + 
+  theme_std + 
+  theme_bar
+```
+
+\newpage
+
+## Percentage of forest land use
+```{r lu-forest}
+desc_clean$continuous %>%
+  filter(variable == "agrgr" & !cohort %in% c("combined", "inma")) %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~time, ncol = 1) +
+  ylab("Percentage") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 20)) +
+  scale_fill_manual(values = palette_std) + 
+  theme_std + 
+  theme_bar
+```
+
+\newpage
+
+## Walkability index
+```{r lu-walk}
+desc_clean$continuous %>%
+  filter(variable == "walkability_mean" & !cohort %in% c("combined", "inma")) %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~time, ncol = 1) +
+  ylab("Decile") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 0.6)) +
+  scale_fill_manual(values = palette_std) + 
+  theme_std + 
+  theme_bar
+```
+
+\newpage
+
+## Land use (Shannon's evenness index)
+```{r lu-shannon}
+desc_clean$continuous %>%
+  filter(variable == "landuseshan300" & !cohort %in% c("combined", "inma")) %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~time, ncol = 1) +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 0.6)) +
+  scale_fill_manual(values = palette_std) + 
+  theme_std + 
+  theme_bar
+```
+
+\newpage
+
+## Facilities richness
+```{r lu-fac-rich}
+desc_clean$continuous %>%
+  filter(variable == "frichness300" & !cohort %in% c("combined", "inma")) %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~time, ncol = 1) +
+  ylab("N facility types / max no. facility types") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 0.20)) +
+  scale_fill_manual(values = palette_std) + 
+  theme_std + 
+  theme_bar
+```
+
+\newpage
+
+## Facilities density
+```{r lu-fac-dens}
+desc_clean$continuous %>%
+  filter(variable == "fdensity300" & !cohort %in% c("combined", "inma")) %>%
+  ggplot(aes(x = cohort_neat, y = mean, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~time, ncol = 1) +
+  ylab("No. facilities within 300m buffer") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 0.20)) +
+  scale_fill_manual(values = palette_std) + 
+  theme_std + 
+  theme_bar
+```
+
+\newpage
+
+# Correlations between exposures
+
+To avoid overload I have just plotted correlations between the pregnancy exposures. It's
+easy to add the exposures in the first year of life if you want to see them too.  
+
+```{r}
+
+  dh.getCorr <- function(object, remove = c("_preg", "_0_12")){
+
+  var_names <- dimnames(object[[1]])[[2]]
+  cor_mat <- object[["Correlation Matrix"]] %>%
+  as_tibble() %>%
+  purrr::set_names(str_remove(var_names, remove)) %>%
+  dplyr::rename(
+    lu_green = urbgr, 
+    lu_forest = natgr,
+    lu_agr = agrgr,
+    walkability = walkability_mean)
+
+  return(cor_mat)
+
+  }
+
+coh_names <- c("alspac", "eden", "inma", "genr", "moba", "ninfea")
+
+cor_preg.plotdata <- exp_cor_preg %>% 
+map(~dh.getCorr(object = ., remove = "_preg")) %>% 
+set_names(coh_names)
+
+#cor_0_12.plotdata <- exp_cor_0_12 %>% 
+#map(~dh.getCorr(object = ., remove = "_0_12")) %>% 
+#set_names(coh_names)
+```
+
+## ALSPAC
+```{r, out.width = "100%"}
+cor_preg.plotdata$alspac %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_std[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## EDEN
+```{r}
+cor_preg.plotdata$eden %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_std[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## INMA
+See above - waiting on built environment data.
+```{r}
+cor_preg.plotdata$inma %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_std[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## GEN-R
+```{r}
+cor_preg.plotdata$genr %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_std[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## MoBa
+```{r}
+cor_preg.plotdata$moba %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_std[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## NINFEA
+```{r}
+cor_preg.plotdata$ninfea %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_std[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+# Postnatal depression
+You can see something is clearly miscoded for MoBa as levels of PND can't be this high - I will contact them.  
+
+I am working with Luise to code the DNBC PND variable.  
+
+Values look plausible for the other cohorts.
+```{r}
+out_clean <- outcome.desc$categorical %>%
+left_join(., names_neat, by = "cohort") %>%
+mutate(
+  cohort_neat = fct_relevel(
+    cohort_neat, 
+    c("MoBa", "GENR", "ALSPAC", "EDEN", "NINFEA", "INMA"))
+  )
+  
+out_clean %>%
+filter(cohort != "combined") %>%
+  ggplot(aes(x = category, y = perc_total, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~cohort, ncol = 7) +
+  ylab("Percentage") +
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 100), breaks = c(seq(0, 100, 10))) +
+  scale_fill_manual(values = palette_std) + 
+  theme_std + 
+  theme_bar +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+# Queries / discussion
+
+## Next steps
+1. Test for non-linear associations between each exposure and outcome
+2. Contact cohort(s) about issues with data
+3. Harmonise DNBC PND variable
+4. Descriptives for DNBC exposures when available
+
+## Queries
+1. How to include all these exposures without risk of false positives?
+2. Harmonisation of DNBC PND variable
+

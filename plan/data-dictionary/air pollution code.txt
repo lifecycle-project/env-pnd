@@ -1,0 +1,25 @@
+"postnatal depression" [outcome,pos="1.072,0.753"]
+"season of birth" [adjusted,pos="-2.051,1.226"]
+ethnicity [adjusted,pos="-2.071,0.400"]
+income [adjusted,pos="-1.144,-1.503"]
+parity [adjusted,pos="-1.333,-0.739"]
+"air pollution" -> "postnatal depression"
+"area SES" -> "air pollution"
+"area SES" -> "postnatal depression"
+"maternal age at birth" -> "air pollution"
+"maternal age at birth" -> "postnatal depression"
+"maternal education" -> "air pollution"
+"maternal education" -> "area SES"
+"maternal education" -> "maternal age at birth"
+"maternal education" -> "postnatal depression"
+"maternal education" -> income
+"maternal education" -> parity
+"season of birth" -> "air pollution"
+"season of birth" -> "postnatal depression"
+ethnicity -> "air pollution"
+ethnicity -> "postnatal depression"
+income -> "air pollution"
+income -> "postnatal depression"
+parity -> "air pollution"
+parity -> "postnatal depression"
+}
