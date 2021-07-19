@@ -74,6 +74,10 @@ outcome.desc <- dh.getStats(
   vars = "ppd"
   )
 
+lu.desc$continuous %>% print(n = Inf) 
+
+ds.summary("nonrep$lden_preg", datasources = conns["dnbc"])
+
 ################################################################################
 # 3. Write descriptives  
 ################################################################################
@@ -153,33 +157,33 @@ violin_nat.data <- dh.getAnonPlotData(
   df = "analysis_df", 
   vars = c("ndvi300_preg", "green_dist_preg", "blue_dist_preg"))
 
-## ---- Variables not present for INMA -----------------------------------------
+## ---- Built data -----------------------------------------
 violin_built.data <- dh.getAnonPlotData(
   df = "analysis_df", 
   vars = c(
-  "bdens300_preg", "fdensity300_preg", "frichness300_preg", 
-  "landuseshan300_preg",  "walkability_mean_preg", "agrgr_preg", "urbgr_preg"), 
-  conns = conns[c("alspac", "dnbc", "genr", "moba", "ninfea", "eden_nan", 
-                  "eden_poit")])
+  "bdens300_preg", "bdens300_1", "fdensity300_preg", "fdensity300_preg",
+  "fdensity300_1", "frichness300_preg", "frichness300_1", "landuseshan300_preg",
+  "landuseshan300_1", "walkability_mean_preg", "walkability_mean_1", 
+  "agrgr_preg", "agrgr_1", "urbgr_preg", "urbgr_1"))
 
 ## ---- LU natural green -------------------------------------------------------
 violin_lu.data <- dh.getAnonPlotData(
   df = "analysis_df", 
   vars = c("natgr_preg", "natgr_1"),
-  conns = conns[c("alspac", "dnbc", "genr", "ninfea", "eden_nan", "eden_poit")])
+  conns = conns[!names(conns) == "moba"])
 
 ## ---- Lden -------------------------------------------------------------------
 violin_noise.data <- dh.getAnonPlotData(
   df = "analysis_df", 
   vars = "lden_preg", 
-  conns = conns[c("inma_sab", "genr", "moba", "ninfea", "eden_nan", "eden_poit")])
+  conns = conns[!names(conns) %in% c("alspac", "dnbc", "inma_gip", "inma_val")])
 
 ## ---- Combine ----------------------------------------------------------------
 violin_out <- c(
   violin_pol.data, violin_nat.data, violin_built.data, violin_noise.data, 
   violin_lu.data)
 
-save(violin_out, file = here("data", "violin_out.RData"))
+save(violin_out, file = here("data", "violin_out_2.RData"))
 
 
 ################################################################################
