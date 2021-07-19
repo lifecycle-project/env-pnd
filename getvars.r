@@ -36,15 +36,13 @@ nonrep.vars <- list(
   "landuseshan300_preg", "walkability_mean_preg", "agrgr_preg", "natgr_preg", 
   "urbgr_preg", "urb_area_id", "lden_c_preg"), 
   tables = c(
-    "alspac/2_1_core_1_2/non_rep",
+    "alspac/2_1_core_1_4/non_rep",
     "lc_dnbc_core_2_2.2_2_core_non_rep_tcadman_2021-lc08", 
-    #"lc_eden_core_2_1.Project22_non_rep", 
-    #"lc_eden_core_2_1.Project22_non_rep", 
-    #"lc_eden_core_2_1.Project22_non_rep", 
+    "lc_eden_core_2_1.Project22_non_rep", 
+    "lc_eden_core_2_1.Project22_non_rep", 
     "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
-    #"lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
-    #"lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
-    #"lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
+    "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
+    "lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
     "lc_genr_core_2_2.2_1_core_non_rep_TC _ECCNLC202053", 
     "lc_moba_core_2_1.2_1_core_2021_2_non_rep_environment_depression", 
     "lc_ninfea_core_2_1.p12_tcadman"))
@@ -63,7 +61,7 @@ trirep.vars <- list(
 "green_dist_t1", "green_dist_t2", "green_dist_t3", "blue_dist_t1", 
 "blue_dist_t2", "blue_dist_t3"), 
   tables = c(
-    "alspac/2_1_core_1_2/trimester",
+    "alspac/2_1_core_1_4/trimester",
     "2_1_core_trimester_rep_tcadman_2021-lc08", 
     #"lc_eden_core_2_1.Project22_trimester_rep", 
     #"lc_isglobal_core_2_1.2_1_core_1_1_non_rep_210118_1", 
@@ -82,15 +80,13 @@ yearrep.vars <- list(
     "agrgr_", "walkability_mean_", "landuseshan300_", "frichness300_", 
     "fdensity300_", "lden_c_"), 
   tables = c(
-    "alspac/2_1_core_1_3/yearly_rep", 
+    "alspac/2_1_core_1_4/yearly_rep", 
     "lc_dnbc_core_2_2.2_2_core_yearly_rep_tcadman_2021-lc08", 
-    #"lc_eden_core_2_1.Project22_yearly_rep",
-    #"lc_eden_core_2_1.Project22_yearly_rep",
-    #"lc_eden_core_2_1.Project22_yearly_rep",
+    "lc_eden_core_2_1.Project22_yearly_rep",
+    "lc_eden_core_2_1.Project22_yearly_rep",
     "lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
-    #"lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
-    #"lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
-    #"lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
+    "lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
+    "lc_isglobal_core_2_1.2_1_core_1_1_yearly_rep_210118_1", 
     "lc_genr_core_2_2.2_1_core_yearly_rep_TC_ECCNLC202053", 
     "lc_moba_core_2_1.2_1_core_2021_1_yearly_rep_environment_depression",
     "lc_ninfea_core_2_1.p12_tcadman_yearly_rep"))
@@ -105,8 +101,6 @@ datashield.assign(
   value = nonrep.vars$tables, 
   variables = nonrep.vars$variables, 
   conns = conns)
-
-ds.table("nonrep$urb_area_id")
 
 ## ---- Trimester repeated -----------------------------------------------------
 
@@ -135,6 +129,30 @@ available <- list(
 
 available$nonrep %>% print(n = Inf)
 available$yearrep %>% print(n = Inf)
+
+# lden shouldn't be a factor for ALSPAC
+ds.asNumeric("yearrep$lden_", datasources = conns["alspac"])
+
+ds.make(
+  toAssign = "lden_*0",
+  newobj = "lden_", 
+  datasources = conns["alspac"]
+)
+
+dh.dropCols(
+  df = "yearrep",
+  vars = "lden_",
+  new_df_name = "yearrep",
+  comp_var = "child_id", 
+  conns = conns["alspac"]
+)
+
+ds.dataFrame(
+  x = c("yearrep", "lden_"),
+  newobj = "yearrep", 
+  datasources = conns["alspac"]
+)
+
 
 ################################################################################
 # 4. Fill missing variables  
@@ -305,7 +323,7 @@ old_new <- tribble(
   "walkability_mean_.0", "walkability_mean_1",
   "landuseshan300_.0", "landuseshan300_1",
   "frichness300_.0", "frichness300_1",
-  "fdensity300_.0", "fdensity300_1"
+  "fdensity300_.0", "fdensity300_1",
   "lden_c_.0", "lden_c_1")    
   
 dh.renameVars(
@@ -389,11 +407,10 @@ conns <- datashield.login(logindata, restore = "env_pnd_7")
 exp.vars <- c(
   "areases_tert_1", "areases_quint_1", "fam_splitup_1", "no2_1", 
   "pm25_1", "lden_1", "ndvi300_1", "green_dist_1", "blue_dist_1", 
-  "bdens100_1", "bdens300_1", "urbgr_1",
-  "natgr_1", "agrgr_1", "walkability_mean_1", "landuseshan300_1",
-  "frichness300_1", "fdensity300_1", "no2_preg", "pm25_preg", 
-  "lden_preg", "ndvi300_preg", "green_dist_preg", "blue_dist_preg", 
-  "bdens100_preg", "bdens300_preg", "fdensity300_preg", "frichness300_preg", 
+  "bdens300_1", "urbgr_1", "natgr_1", "agrgr_1", "walkability_mean_1",
+  "landuseshan300_1", "frichness300_1", "fdensity300_1", "no2_preg",
+  "pm25_preg", "lden_preg", "ndvi300_preg", "green_dist_preg", "blue_dist_preg", 
+  "bdens300_preg", "fdensity300_preg", "frichness300_preg", 
   "landuseshan300_preg", "walkability_mean_preg", "agrgr_preg", "natgr_preg", 
   "urbgr_preg", "lden_c_preg", "lden_c_1") 
   
@@ -406,7 +423,7 @@ cov.vars <- c(
 "preg_alc_unit", "breastfed_any", "breastfed_ever",  "cohort_id", 
 "preg_dia", "preg_ht", "ga_bj", "prepreg_dep", "child_id", "child_no", 
 "preg_no", "mother_id", "outcome", "con_anomalies", "birth_month", 
-"age_years_1", "cohab_1", coh_dummy$cohort)
+"age_years_1", "cohab_1", coh_dummy$cohort, "urb_area_id")
 
 
 ## ---- Now we create vars indicating whether any non-missing values are present
@@ -471,12 +488,21 @@ var_index %>%
 datashield.workspace_save(conns, "env_pnd_9")
 conns <- datashield.login(logindata, restore = "env_pnd_9")
 
+
+
+
+
+
+
+
+
+
 ################################################################################
 # 12. Create sub-cohorts for inma and eden  
 ################################################################################
 tibble(
-  cohort = c("inma_gip", "inma_sab", "inma_val"),
-  value = c(1102, 1103, 1104)) %>%
+  cohort = c("inma_gip", "inma_sab", "inma_val", "eden_nan", "eden_poit"),
+  value = c("1102", "1103", "1104", "1801", "1802")) %>%
   pmap(function(cohort, value){
     
     ds.dataFrameSubset(
@@ -489,9 +515,8 @@ tibble(
   
     })
 
+
 ## ---- Save progress ----------------------------------------------------------
 datashield.workspace_save(conns, "env_pnd_10")
 conns <- datashield.login(logindata, restore = "env_pnd_10")
 
-
-ds.dataFrameSubset

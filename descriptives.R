@@ -75,25 +75,12 @@ dh.dropCols(
   df = "analysis_df", 
   vars = c(
     "no2_preg", "pm25_preg", "lden_preg", "ndvi300_preg", "green_dist_preg", 
-    "blue_dist_preg", "bdens100_preg", "bdens300_preg", "fdensity300_preg", 
-    "frichness300_preg", "landuseshan300_preg", "walkability_mean_preg", 
-    "agrgr_preg", "natgr_preg", "urbgr_preg"),
+    "blue_dist_preg", "bdens300_preg", "fdensity300_preg", "frichness300_preg", 
+    "landuseshan300_preg", "walkability_mean_preg", "agrgr_preg", "natgr_preg", 
+    "urbgr_preg"),
   comp_var = "child_id",
   type = "keep",
   new_df_name = "heat_preg")
-
-# Birth to 12 months
-dh.dropCols(
-  df = "analysis_df", 
-  vars = c(
-    "areases_tert_1", "areases_quint_1", "fam_splitup_1", "no2_1", 
-    "pm25_1", "lden_1", "ndvi300_1", "green_dist_1", "blue_dist_1", 
-    "age_years_1", "cohab_1", "bdens100_1", "bdens300_1", "urbgr_1",
-    "natgr_1", "agrgr_1", "walkability_mean_1", "landuseshan300_1",
-    "frichness300_1", "fdensity300_1"),
-  comp_var = "child_id",
-  type = "keep",
-  new_df_name = "heat_0_12")
 
 ## ---- Correlation matrices ---------------------------------------------------
 exp_cor_preg <- ds.cor(
@@ -101,13 +88,7 @@ exp_cor_preg <- ds.cor(
   type = "split"
 )
 
-exp_cor_0_12 <- ds.cor(
-  x = "heat_0_12", 
-  type = "split"
-)
-  
 save(exp_cor_preg, file = here("data", "exp_cor_preg.RData"))
-save(exp_cor_0_12, file = here("data", "exp_cor_0_12.RData"))
 
 ################################################################################
 # 5. Box plots using Demetris' function  
@@ -120,16 +101,21 @@ violin_all.data <- dh.getAnonPlotData(
     "no2_preg", "pm25_preg", "ndvi300_preg", "ndvi300_1", "green_dist_preg", 
     "green_dist_1", "blue_dist_preg", "blue_dist_1"))
 
-## ---- Variables not present for DNBC -----------------------------------------
+## ---- Variables not present for INMA -----------------------------------------
 violin_built.data <- dh.getAnonPlotData(
   df = "analysis_df", 
   vars = c(
-  "bdens100_preg", "bdens100_1", "bdens300_preg", "bdens300_1", 
-  "fdensity300_preg", "fdensity300_1", "frichness300_preg", "frichness300_1", 
-  "landuseshan300_preg", "landuseshan300_1", "walkability_mean_preg", 
-  "walkability_mean_1", "agrgr_preg", "agrgr_1", "natgr_preg", "natgr_1", 
-  "urbgr_preg", "urbgr_1"), 
-  conns = conns[c("alspac", "genr", "moba", "ninfea")])
+  "bdens300_preg", "bdens300_1", "fdensity300_preg", "fdensity300_1", 
+  "frichness300_preg", "frichness300_1", "landuseshan300_preg", 
+  "landuseshan300_1", "walkability_mean_preg", "walkability_mean_1", 
+  "agrgr_preg", "agrgr_1", "urbgr_preg", "urbgr_1"), 
+  conns = conns[c("alspac", "dnbc", "genr", "moba", "ninfea")])
+
+## ---- LU natural green -------------------------------------------------------
+violin_nat.data <- dh.getAnonPlotData(
+  df = "analysis_df", 
+  vars = c("natgr_preg", "natgr_1"),
+  conns = conns[c("alspac", "dnbc", "genr", "ninfea")])
 
 ## ---- Lden -------------------------------------------------------------------
 violin_noise.data <- dh.getAnonPlotData(
@@ -137,7 +123,9 @@ violin_noise.data <- dh.getAnonPlotData(
   vars = "lden_preg", 
   conns = conns[c("inma", "genr", "moba", "ninfea")])
 
-violin_out <- c(violin_all.data, violin_built.data, violin_noise.data)
+## ---- Combine ----------------------------------------------------------------
+violin_out <- c(
+  violin_all.data, violin_built.data, violin_noise.data, violin_nat.data)
 
 save(violin_out, file = here("data", "violin_out.RData"))
 
@@ -147,23 +135,25 @@ save(violin_out, file = here("data", "violin_out.RData"))
 ################################################################################
 cohorts <- names(conns)
 
+ppd_miss <- c("genr", "inma", "dnbc")
+
 ## ---- Natural spaces ---------------------------------------------------------
 nat.mod <- list(
   ndvi = list(
     outcome = "ppd",
     exposure = "ndvi300_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("genr", "inma") == FALSE]), 
+    cohorts = cohorts[cohorts %in% ppd_miss == FALSE]), 
   green_dist = list(
     outcome = "ppd",
     exposure = "green_dist_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("genr", "inma") == FALSE]), 
+    cohorts = cohorts[cohorts %in% ppd_miss == FALSE]), 
   blue_dist = list(
     outcome = "ppd",
     exposure = "blue_dist_preg", 
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("genr", "inma") == FALSE]))
+    cohorts = cohorts[cohorts %in% ppd_miss == FALSE]))
 
 ## ---- Polution ---------------------------------------------------------------
 pol.mod <- list(
@@ -171,12 +161,12 @@ pol.mod <- list(
     outcome = "ppd",
     exposure = "no2_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("inma") == FALSE]), 
+    cohorts = cohorts[cohorts %in% ppd_miss == FALSE]), 
   pm25 = list(
     outcome = "ppd",
     exposure = "pm25_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("inma") == FALSE]))
+    cohorts = cohorts[cohorts %in% ppd_miss == FALSE]))
 
 ## ---- Grey space -------------------------------------------------------------
 grey.mod <- list(
@@ -184,47 +174,43 @@ grey.mod <- list(
     outcome = "ppd",
     exposure = "bdens300_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("inma") == FALSE]), 
+    cohorts = cohorts[cohorts %in% ppd_miss == FALSE]), 
   fdens = list(
     outcome = "ppd",
     exposure = "fdensity300_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+    cohorts = cohorts[cohorts %in% ppd_miss == FALSE]),
   frich = list(
     outcome = "ppd",
     exposure = "frichness300_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+    cohorts = cohorts[cohorts %in% ppd_miss == FALSE]),
   landuse = list(
     outcome = "ppd",
     exposure = "landuseshan300_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+    cohorts = cohorts[cohorts %in% ppd_miss == FALSE]),
   walk = list(
     outcome = "ppd",
     exposure = "walkability_mean_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+    cohorts = cohorts[cohorts %in% ppd_miss == FALSE]),
   lu_agr = list(
     outcome = "ppd",
     exposure = "agrgr_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("inma") == FALSE]),
+    cohorts = cohorts[cohorts %in% ppd_miss == FALSE]),
   lu_forst = list(
     outcome = "ppd",
     exposure = "natgr_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("inma", "moba") == FALSE]),
+    cohorts = cohorts[cohorts %in% c(ppd_miss, "moba") == FALSE]),
   lu_urb_green = list(
     outcome = "ppd",
     exposure = "urbgr_preg",
     covariates = "",
-    cohorts = cohorts[cohorts %in% c("inma") == FALSE]))
+    cohorts = cohorts[cohorts %in% ppd_miss == FALSE]))
   
-
-ds.summary("analysis_df$natgr_preg")
-
-
 
 dh.glmWrap <- function(x, type, dummy_suff = "_dummy", data = "analysis_df"){
   
@@ -274,26 +260,6 @@ grey.fit <- grey.mod %>%
   map(dh.glmWrap, type = "slma")
 
 
-test_a <- ds.glmSLMA(
-  formula = "ppd~green_dist_preg",
-  data = "analysis_df", 
-  family = "binomial", 
-  datasources = conns[c("alspac", "ninfea")])
-
-test_b <- ds.glm(
-  formula = "ppd~green_dist_preg",
-  data = "analysis_df", 
-  family = "binomial", 
-  datasources = conns[c("alspac", "ninfea")])
-
-test_c <- ds.cor("analysis_df$ppd", "analysis_df$green_dist_preg", datasources = conns[c("alspac", "ninfea")]) 
-  
-  ds.summary("analysis_df$green_dist_preg", datasources = conns[c("alspac", "genr", "ninfea")])
-ds.class("analysis_df$ppd")
-  
-  ds.summary("analysis_df$alspac_dummy")
-  ds.table("analysis_df$ppd", datasources = conns[c("alspac", "genr", "ninfea")])
-
 ################################################################################
 # 8. Get coefficients for plots   
 ################################################################################
@@ -307,7 +273,8 @@ nat.out <- list(fit = nat.fit, model = nat.mod) %>%
       type = "slma", 
       coh_names = model$cohorts, 
       ci_format = "separate", 
-      direction = "wide") 
+      direction = "wide", 
+      round_digits = 10) 
     
   }) %>% bind_rows(.id = "exposure")
 
@@ -320,7 +287,8 @@ pol.out <- list(fit = pol.fit, model = pol.mod) %>%
       type = "slma", 
       coh_names = model$cohorts, 
       ci_format = "separate", 
-      direction = "wide") 
+      direction = "wide", 
+      round_digits = 10)  
     
   }) %>% bind_rows(.id = "exposure")
 
@@ -333,13 +301,16 @@ grey.out <- list(fit = grey.fit, model = grey.mod) %>%
       type = "slma", 
       coh_names = model$cohorts, 
       ci_format = "separate", 
-      direction = "wide") 
+      direction = "wide", 
+      round_digits = 10) 
     
   }) %>% bind_rows(.id = "exposure")
 
 ## ---- Combine and output -----------------------------------------------------
 single_reg.out <- bind_rows(nat.out, pol.out, grey.out)
 save(single_reg.out, file = here("data", "single_reg.RData"))
+
+save.image()
 
 ################################################################################
 # 6. Create subsets for stratified odds ratios  
