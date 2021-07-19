@@ -27,26 +27,33 @@ header-includes:
 output: 
  bookdown::pdf_document2:
   latex_engine: xelatex
-  template: "C:/Users/gmj541/OneDrive - University of Bristol/repos/useful-code-r/code/reports/khl_5.tex"
+  template: "/Users/timcadman/OneDrive - University of Bristol/repos/useful-code-r/code/reports/khl_5.tex"
   fig_caption: yes
   toc_depth: 1
 ---
 ```{r settings, echo = FALSE}
-options(datashield.progress = FALSE)
-options(datashield.progress.clear = TRUE)
-knitr::opts_chunk$set(message = FALSE)
-knitr::opts_chunk$set(results = FALSE)
-knitr::opts_chunk$set(warning = FALSE)
-knitr::opts_chunk$set(echo = FALSE)
-knitr::opts_chunk$set(comment = NA, tidy=FALSE, fig.pos = 'H')
-options(knitr.duplicate.label = "allow")
-options(knitr.table.format = "latex")
+options(
+  datashield.progress = FALSE,
+  datashield.progress.clear = TRUE,
+  knitr.duplicate.label = "allow",
+  knitr.table.format = "latex")
+
+knitr::opts_chunk$set(
+  message = FALSE, 
+  results = FALSE,
+  warning = FALSE,
+  echo = FALSE,
+  comment = NA, 
+  tidy=FALSE, 
+  fig.pos = 'H',
+  fig.height = 10, 
+  fig.width = 8)
 ```
 
 ```{r render, eval = FALSE, echo = FALSE}
 rmarkdown::render(
   input = "./reports/31-may-21/env_pnd_desc_16_07_21.Rmd", 
-  output_file = "env-pnd-desc-16-june-21.pdf", envir = globalenv())
+  output_file = "env-pnd-desc-16-july-21.pdf", envir = globalenv())
 ```  
 
 ```{r load-packages}
@@ -72,7 +79,7 @@ y_scale <- coord_flip(
 
 } else if(!is.null(limits)){
 
-y_scale <- y_scale <- coord_flip(     
+y_scale <- coord_flip(     
   ylim = limits,
   expand = FALSE,
   clip = "on")

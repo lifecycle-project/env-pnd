@@ -1,0 +1,190 @@
+---
+title: "Urban environment & postnatal depression: descriptive statistics"
+date: 16th July 2021
+author: Tim Cadman
+subparagraph: true
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{wrapfig}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+- \usepackage{titlesec}
+- \usepackage{caption}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \usepackage{subcaption}
+- \definecolor{customcol}{RGB}{38, 70, 83}
+
+output: 
+ bookdown::pdf_document2:
+  latex_engine: xelatex
+  template: "/Users/timcadman/OneDrive - University of Bristol/repos/useful-code-r/code/reports/khl_5.tex"
+  fig_caption: yes
+  toc_depth: 1
+---
+```{r settings, echo = FALSE}
+options(datashield.progress = FALSE)
+options(datashield.progress.clear = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(results = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(comment = NA, tidy=FALSE, fig.pos = 'H')
+options(knitr.duplicate.label = "allow")
+options(knitr.table.format = "latex")
+```
+
+```{r render, eval = FALSE, echo = FALSE}
+rmarkdown::render(
+  input = "./reports/31-may-21/test-fig-height.Rmd", 
+  output_file = "env-pnd-desc-test-fig-height.pdf", envir = globalenv())
+```  
+
+```{r load-packages}
+library(GGally)   
+library(kableExtra)
+library(Cairo)
+library(see)
+library(tidyverse)
+library(here)
+library(showtext)
+```
+
+```{r get-themes}
+source("https://raw.githubusercontent.com/timcadman/useful-code-r/master/code/themes/themes.R")
+source("https://raw.githubusercontent.com/timcadman/useful-code-r/master/code/themes/lc-names-neat.R")
+
+hVPlot <- function(data = violin.plotData, var, y_label = NULL, limits = NULL){
+
+if(is.null(limits)){
+y_scale <- coord_flip(     
+  expand = FALSE,
+  clip = "on")
+
+} else if(!is.null(limits)){
+
+y_scale <- y_scale <- coord_flip(     
+  ylim = limits,
+  expand = FALSE,
+  clip = "on")
+
+}
+
+data %>%
+filter(variable == var) %>%
+ggplot(aes(x = cohort_n, y = value)) +
+geom_violinhalf(aes(fill = cohort_neat), alpha = 0.75) + 
+geom_boxplot(width=0.10, outlier.size = 0.5) +
+facet_wrap(~time, ncol = 2, scales = "free_y") +
+y_scale + 
+ylab(y_label) +
+scale_fill_manual(values = palette_ext) + 
+theme_std + 
+theme_hv +
+theme(
+  axis.title.y = element_blank()
+  )
+}
+
+showtext_auto()
+```
+
+```{r get-data}
+
+## ---- Descriptives -----------------------------------------------------------
+load(here("data", "exp_desc.RData"))
+load(here("data", "out_desc.RData"))
+
+## ---- Correlations between exposures -----------------------------------------
+load(here("data", "exp_cor_preg.RData"))
+load(here("data", "btp_cor_preg.RData"))
+
+## ---- Anonymised plot data ---------------------------------------------------
+load(here("data", "violin_out.RData"))
+
+## ---- Exposure - outcome associations ----------------------------------------
+load(here("data", "single_reg.RData"))
+
+```
+
+```{r, tidy-data}
+time_labs <- c("Birth to 12 months", "Pregnancy")
+
+## ---- Function to tidy descriptives ------------------------------------------
+cleanData = function(x){
+
+out <- x %>%
+separate(
+  data = .,
+  col = variable, 
+  sep = "_(?=[^_]*$)", 
+  into = c("variable", "time")) %>%
+mutate(
+  .data = ., 
+  time = factor(time, labels = time_labs, ordered = TRUE)) %>%
+mutate(
+  .data = ., 
+  time = fct_relevel(time, rev(time_labs))) %>%
+left_join(., names_neat, by = "cohort") %>%  
+mutate(
+  .data = .,
+  cohort_neat = fct_relevel(
+    cohort_neat, 
+    c("MoBa", "DNBC", "GENR", "ALSPAC", "NINFEA", "EDEN Nancy", "EDEN Poitiers", 
+      "INMA Gipuzkoa", "INMA Sabadell", "INMA Valencia"))) %>%
+mutate(cohort_neat = factor(cohort_neat, ordered = TRUE))
+
+}
+
+desc_clean <- exposures.desc$continuous %>% cleanData
+
+## ---- Violin plot data -------------------------------------------------------
+violin.plotData <- violin_out %>% 
+bind_rows(.id = "variable") %>% 
+cleanData %>% 
+group_by(variable, time, cohort) %>% 
+mutate(n = n()) %>% 
+mutate(cohort_n = paste0(cohort_neat, "\n", "n = ", n))
+
+
+## ---- Exposure - outcome plot data -------------------------------------------
+#single_reg.plotData <- single_reg.out %>% 
+#left_join(., names_neat, by = "cohort") %>%  
+#mutate(
+#  .data = .,
+#  cohort_neat = fct_relevel(
+#    cohort_neat, 
+#    rev(c("MoBa", "ALSPAC", "NINFEA", "Pooled results")))) %>%
+#filter(variable != "intercept") %>%
+#mutate(across(est:uppci, ~ exp(.x)))
+```
+
+\newpage
+
+# Overview
+I've put together (i) descriptive plots for exposures and outcomes, (ii) 
+correlations between exposures, and (iii) associations between each exposure
+and outcome. I will also look at non-linearity in exposure-outcome associations,
+but I need to write a function to do spline modelling in DataSHIELD.
+
+\newpage
+
+# Descriptive statistics for exposures
+
+## NDVI (300m buffer)
+```{r ndvi, fig.showtext = TRUE, fig.height = 10, fig.width = 8}
+hVPlot(var = "ndvi300", y_label = "NDVI", limits = c(0.1, 0.8)) 
+```
+
+\newpage
+
+test text for new page
