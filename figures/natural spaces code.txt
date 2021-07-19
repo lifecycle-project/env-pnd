@@ -1,0 +1,30 @@
+dag {
+"area SES" [adjusted,pos="-1.872,-0.110"]
+"maternal age at birth" [adjusted,pos="-1.229,-1.072"]
+"maternal education" [adjusted,pos="-2.087,-0.681"]
+"natural spaces" [exposure,pos="-0.803,0.762"]
+"postnatal depression" [outcome,pos="1.072,0.753"]
+"season of birth" [adjusted,pos="-2.051,1.226"]
+ethnicity [adjusted,pos="-2.071,0.400"]
+income [adjusted,pos="-1.144,-1.503"]
+parity [adjusted,pos="-1.333,-0.739"]
+"area SES" -> "natural spaces"
+"area SES" -> "postnatal depression"
+"maternal age at birth" -> "natural spaces"
+"maternal age at birth" -> "postnatal depression"
+"maternal education" -> "area SES"
+"maternal education" -> "maternal age at birth"
+"maternal education" -> "natural spaces"
+"maternal education" -> "postnatal depression"
+"maternal education" -> income
+"maternal education" -> parity
+"natural spaces" -> "postnatal depression"
+"season of birth" -> "natural spaces"
+"season of birth" -> "postnatal depression"
+ethnicity -> "natural spaces"
+ethnicity -> "postnatal depression"
+income -> "natural spaces"
+income -> "postnatal depression"
+parity -> "natural spaces"
+parity -> "postnatal depression"
+}

@@ -1,0 +1,502 @@
+---
+title: "Urban environment & postnatal depression: descriptive statistics"
+date: 14th June 2021
+author: Tim Cadman
+subparagraph: true
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{wrapfig}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+- \usepackage{titlesec}
+- \usepackage{caption}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \usepackage{subcaption}
+- \definecolor{customcol}{RGB}{38, 70, 83}
+
+output: 
+ bookdown::pdf_document2:
+  latex_engine: xelatex
+  template: "C:/Users/gmj541/OneDrive - University of Bristol/repos/useful-code-r/code/reports/khl_5.tex"
+  fig_caption: yes
+  toc_depth: 1
+---
+```{r settings, echo = FALSE}
+options(datashield.progress = FALSE)
+options(datashield.progress.clear = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(results = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(comment = NA, tidy=FALSE, fig.pos = 'H')
+options(knitr.duplicate.label = "allow")
+options(knitr.table.format = "latex")
+```
+
+```{r render, eval = FALSE, echo = FALSE}
+rmarkdown::render(
+  input = "./reports/31-may-21/env_pnd_desc_16_07_21.Rmd", 
+  output_file = "env-pnd-desc-16-june-21.pdf", envir = globalenv())
+```  
+
+```{r load-packages}
+library(GGally)   
+library(kableExtra)
+library(Cairo)
+library(see)
+library(tidyverse)
+library(here)
+library(showtext)
+```
+
+```{r get-themes}
+source("https://raw.githubusercontent.com/timcadman/useful-code-r/master/code/themes/themes.R")
+source("https://raw.githubusercontent.com/timcadman/useful-code-r/master/code/themes/lc-names-neat.R")
+
+hVPlot <- function(data = violin.plotData, var, y_label = NULL, limits = NULL){
+
+if(is.null(limits)){
+y_scale <- coord_flip(     
+  expand = FALSE,
+  clip = "on")
+
+} else if(!is.null(limits)){
+
+y_scale <- y_scale <- coord_flip(     
+  ylim = limits,
+  expand = FALSE,
+  clip = "on")
+
+}
+
+data %>%
+filter(variable == var) %>%
+ggplot(aes(x = cohort_n, y = value)) +
+geom_violinhalf(aes(fill = cohort_neat), alpha = 0.75) + 
+geom_boxplot(width=0.10, outlier.size = 0.5) +
+facet_wrap(~time, ncol = 2, scales = "free_y") +
+y_scale + 
+ylab(y_label) +
+scale_fill_manual(values = palette_ext) + 
+theme_std + 
+theme_hv +
+theme(
+  axis.title.y = element_blank()
+  )
+}
+
+showtext_auto()
+```
+
+```{r get-data}
+
+## ---- Descriptives -----------------------------------------------------------
+load(here("data", "exp_desc.RData"))
+load(here("data", "out_desc.RData"))
+
+## ---- Correlations between exposures -----------------------------------------
+load(here("data", "exp_cor_preg.RData"))
+load(here("data", "btp_cor_preg.RData"))
+
+## ---- Anonymised plot data ---------------------------------------------------
+load(here("data", "violin_out.RData"))
+
+## ---- Exposure - outcome associations ----------------------------------------
+load(here("data", "single_reg.RData"))
+
+```
+
+```{r, tidy-data}
+time_labs <- c("Birth to 12 months", "Pregnancy")
+
+## ---- Function to tidy descriptives ------------------------------------------
+cleanData = function(x){
+
+out <- x %>%
+separate(
+  data = .,
+  col = variable, 
+  sep = "_(?=[^_]*$)", 
+  into = c("variable", "time")) %>%
+mutate(
+  .data = ., 
+  time = factor(time, labels = time_labs, ordered = TRUE)) %>%
+mutate(
+  .data = ., 
+  time = fct_relevel(time, rev(time_labs))) %>%
+left_join(., names_neat, by = "cohort") %>%  
+mutate(
+  .data = .,
+  cohort_neat = fct_relevel(
+    cohort_neat, 
+    c("MoBa", "DNBC", "GENR", "ALSPAC", "NINFEA", "EDEN Nancy", "EDEN Poitiers", 
+      "INMA Gipuzkoa", "INMA Sabadell", "INMA Valencia"))) %>%
+mutate(cohort_neat = factor(cohort_neat, ordered = TRUE))
+
+}
+
+desc_clean <- exposures.desc$continuous %>% cleanData
+
+## ---- Violin plot data -------------------------------------------------------
+violin.plotData <- violin_out %>% 
+bind_rows(.id = "variable") %>% 
+cleanData %>% 
+group_by(variable, time, cohort) %>% 
+mutate(n = n()) %>% 
+mutate(cohort_n = paste0(cohort_neat, "\n", "n = ", n))
+
+
+## ---- Exposure - outcome plot data -------------------------------------------
+#single_reg.plotData <- single_reg.out %>% 
+#left_join(., names_neat, by = "cohort") %>%  
+#mutate(
+#  .data = .,
+#  cohort_neat = fct_relevel(
+#    cohort_neat, 
+#    rev(c("MoBa", "ALSPAC", "NINFEA", "Pooled results")))) %>%
+#filter(variable != "intercept") %>%
+#mutate(across(est:uppci, ~ exp(.x)))
+```
+
+\newpage
+
+# Overview
+I've put together (i) descriptive plots for exposures and outcomes, (ii) 
+correlations between exposures, and (iii) associations between each exposure
+and outcome. I will also look at non-linearity in exposure-outcome associations,
+but I need to write a function to do spline modelling in DataSHIELD.
+
+\newpage
+
+# Descriptive statistics for exposures
+
+## NDVI (300m buffer)
+```{r ndvi, fig.showtext = TRUE}
+hVPlot(var = "ndvi300", y_label = "NDVI", limits = c(0.1, 0.8)) 
+```
+
+\newpage
+
+## Distance to nearest green spaces > 5000m^2^
+There is a mistake with GEN-R data which they are fixing.
+```{r green-dist}
+hVPlot(
+  data = violin.plotData %>% filter(cohort != "genr"), 
+  var = "green_dist", 
+  y_label = "Distance (m)", 
+  limits = c(-100, 1000)) 
+```
+
+\newpage
+
+## Distance to nearest blue spaces > 5000m^2^
+Again, GEN-R is excluded because of an error with their data.
+```{r blue-dist}
+hVPlot(
+  data = violin.plotData %>% filter(cohort != "genr"), 
+  var = "blue_dist", 
+  y_label = "Distance (m)", 
+  limits = c(-100, 5000)) 
+```
+
+\newpage
+
+## Mean NO~2~ in pregnancy
+```{r no2-preg}
+hVPlot(
+  var = "no2", 
+  y_label = "N02 (microgram / m3)", 
+  limits = c(0, 90))
+```
+
+\newpage
+
+## Mean PM~2.5~ in pregnancy  
+
+```{r pm25-preg}
+hVPlot(
+  var = "pm25", 
+  y_label = "N02 (microgram / m3)", 
+  limits = c(0, 40))
+```
+
+\newpage
+
+## Mean PM~2.5~ from 0-1 years
+For some reason this is missing in the data - will check.
+
+## Mean NO~2~ from 0-1 years
+Again this is missing but I'm not sure why.
+
+## Mean day-evening-night traffic noise
+Missing in INMA Gipuzkoa & Valencia - is this correct?
+```{r lden}
+hVPlot(
+  var = "lden", 
+  y_label = "Noise (dBA)", 
+  limits = c(30, 80))
+```
+
+For ALSPAC (and DNBC?) only the categorical version is available - I will add this.
+
+\newpage
+
+## Mean buildling density
+```{r lu-building}
+hVPlot(
+  var = "bdens300", 
+  y_label = "Density (m2 / km2)", 
+  limits = c(0, 800000))
+```
+
+\newpage
+
+## Percentage of urban green land use
+```{r lu-green}
+hVPlot(
+  var = "urbgr", 
+  y_label = "Percent", 
+  limits = c(0, 100))
+```
+
+\newpage
+
+## Percentage of forest land use
+```{r lu-forest}
+hVPlot(
+  var = "natgr", 
+  y_label = "Percent", 
+  limits = c(0, 100))
+```
+
+\newpage
+
+## Percentage of agricultural land use
+```{r lu-agr}
+hVPlot(
+  var = "agrgr", 
+  y_label = "Percent", 
+  limits = c(0, 100))
+```
+
+\newpage
+
+## Walkability index
+```{r lu-walk}
+hVPlot(
+  var = "walkability_mean", 
+  y_label = "Mean", 
+  limits = c(0, 0.8))
+```
+
+\newpage
+
+## Land use (Shannon's evenness index)
+```{r lu-shannon}
+hVPlot(
+  var = "landuseshan300", 
+  y_label = "Eveness index", 
+  limits = c(0, 1))
+```
+
+\newpage
+
+## Facilities richness
+```{r lu-fac-rich}
+hVPlot(
+  var = "frichness300", 
+  y_label = "N facility types / max no. facility types", 
+  limits = c(0, 0.6))
+```
+
+\newpage
+
+## Facilities density
+```{r lu-fac-dens}
+hVPlot(
+  var = "fdensity300", 
+  y_label = "No. facilities within 300m buffer", 
+  limits = c(0, 1000))
+```
+
+\newpage
+
+# Correlations between exposures
+
+To avoid overload I have just plotted correlations between the pregnancy 
+exposures.
+```{r}
+dh.getCorr <- function(object, remove = c("_preg", "_0_12")){
+
+  var_names <- dimnames(object[[1]])[[2]]
+  cor_mat <- object[["Correlation Matrix"]] %>%
+  as_tibble() %>%
+  purrr::set_names(str_remove(var_names, remove)) %>%
+  dplyr::rename(
+    lu_green = urbgr, 
+    lu_forest = natgr,
+    lu_agr = agrgr,
+    walkability = walkability_mean)
+
+  return(cor_mat)
+
+  }
+
+coh_names <- c("alspac", "dnbc", "eden_nan", "eden_poit", "inma_gip", "inma_sab", "inma_val", "genr", "moba", "ninfea")
+
+cor_preg.plotdata <- exp_cor_preg %>% 
+map(~dh.getCorr(object = ., remove = "_preg")) %>% 
+set_names(coh_names)
+```
+
+## ALSPAC
+```{r, out.width = "100%"}
+cor_preg.plotdata$alspac %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_ext[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## DNBC
+```{r, out.width = "100%"}
+cor_preg.plotdata$dnbc %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_ext[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## EDEN Poitieres
+```{r}
+cor_preg.plotdata$eden_poit %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_ext[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## EDEN Nancy
+```{r}
+cor_preg.plotdata$eden_nan %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_ext[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+## INMA Gipuzkoa
+```{r}
+cor_preg.plotdata$inma_gip %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_std[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## INMA Sabadell
+```{r}
+cor_preg.plotdata$inma_sab %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_std[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## INMA Valencia
+```{r}
+cor_preg.plotdata$inma_val %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_std[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## GEN-R
+```{r}
+cor_preg.plotdata$genr %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_std[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## MoBa
+```{r}
+cor_preg.plotdata$moba %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_std[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+## NINFEA
+```{r}
+cor_preg.plotdata$ninfea %>%
+ggcorr(data = NULL, cor_matrix = ., label = TRUE, label_round = 2, hjust = 1, layout.exp = 1, label_size = 3, low = palette_std[2], mid = "white", high = palette_std[5]) +
+theme_cor
+```
+
+\newpage
+
+
+# Correlations between timepoints
+
+Note I still need to get access to INMA natural space variables age 0-1.
+```{r}
+tidyBtpCor <- function(x){
+x %>%
+map(~.[["Correlation Matrix"]][[2]]) %>%
+setNames(coh_names) %>%
+bind_rows()
+}
+
+btp_cor %>% map(tidyBtpCor) %>%
+setNames(
+  c(
+  "lden", "ndvi300", "green_dist", "blue_dist", "bdens300", "fdensity300", 
+  "frichness300", "landuseshan300", "walkability_mean", "agrgr", "natgr", 
+    "urbgr")) %>%
+bind_rows(.id = "variable") 
+```
+
+
+
+# Descriptive statistics for outcome
+Here are the frequencies for postnatal depression. We need discuss how to code
+this for DNBC.
+```{r}
+out_clean <- outcome.desc$categorical %>%
+filter(cohort != "inma") %>%
+left_join(., names_neat, by = "cohort") %>%
+mutate(
+  cohort_neat = fct_relevel(
+    cohort_neat, 
+    c("MoBa", "GENR", "ALSPAC", "NINFEA", "Pooled results"))
+  )
+
+out_clean %>%
+filter(cohort != "combined") %>%
+  ggplot(aes(x = category, y = perc_total, fill = cohort_neat)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~cohort, ncol = 10) +
+  ylab("Percentage") +
+  coord_cartesian(
+    ylim = c(0, 100), 
+    expand = FALSE) +
+  scale_fill_manual(values = palette_ext) + 
+  theme_std + 
+  theme_hv +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+\newpage
+
