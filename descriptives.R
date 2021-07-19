@@ -14,15 +14,16 @@ library(dplyr)
 library(magrittr)
 library(tidyr)
 library(stringr)
-#library(remotes)
-#install_github("lifecycle-project/ds-helper")
+library(remotes)
+install_github("lifecycle-project/ds-helper")
 library(dsHelper)
 library(forcats)
 library(here)
 
 ls("package:dsBaseClient")
 
-conns <- datashield.login(logindata, restore = "env_pnd_9")
+conns <- datashield.login(logindata, restore = "env_pnd_10")
+
 ################################################################################
 # 1. Define variable groups  
 ################################################################################
@@ -43,17 +44,35 @@ lu.vars <- c("bdens300_preg", "bdens300_1", "urbgr_preg", "urbgr_1",
              "fdensity300_preg", "fdensity300_1", "agrgr_preg")
 
 ################################################################################
-# 2. Extract stats  
+# 3. Get descriptives   
 ################################################################################
-exposures.desc <- dh.getStats(
-  df = "analysis_df", 
-  vars = c(sep.vars, pol.vars, nat.vars, lu.vars)
-)
+#sep.desc <- dh.getStats(
+#  df = "analysis_df", 
+#  vars = sep.vars
+#  )
+
+pol.desc <- dh.getStats(
+  df = "analysis_df",
+  vars = pol.vars
+  )
+
+nat.desc <- dh.getStats(
+  df = "analysis_df",
+  vars = nat.vars
+  )
+
+lu.desc <- dh.getStats(
+  df = "analysis_df",
+  vars = lu.vars
+  )
+
+exposures.desc <- list(pol.desc, nat.desc, lu.desc) %>%
+  pmap(bind_rows)
 
 outcome.desc <- dh.getStats(
   df = "analysis_df", 
   vars = "ppd"
-)
+  )
 
 ################################################################################
 # 3. Write descriptives  
@@ -65,7 +84,7 @@ save(exposures.desc, file = here("data", "exp_desc.RData"))
 save(outcome.desc, file = here("data", "out_desc.RData"))
 
 ################################################################################
-# 4. Heat map analysis  
+# 4. Within-time point correlations  
 ################################################################################
 
 ## ---- Create two subsets with only the required variables --------------------
@@ -91,47 +110,80 @@ exp_cor_preg <- ds.cor(
 save(exp_cor_preg, file = here("data", "exp_cor_preg.RData"))
 
 ################################################################################
-# 5. Box plots using Demetris' function  
+# 5. Between time point correlations
+################################################################################
+cor_ref <- tibble(
+  var_1 = c(
+    "lden_preg", "ndvi300_preg", "green_dist_preg", 
+    "blue_dist_preg", "bdens300_preg", "fdensity300_preg", "frichness300_preg", 
+    "landuseshan300_preg", "walkability_mean_preg", "agrgr_preg", "natgr_preg", 
+    "urbgr_preg"
+  ), 
+  var_2 = c(
+    "lden_1", "ndvi300_1", "green_dist_1", 
+    "blue_dist_1", "bdens300_1", "fdensity300_1", "frichness300_1", 
+    "landuseshan300_1", "walkability_mean_1", "agrgr_1", "natgr_1", 
+    "urbgr_1"
+  )
+)
+
+btp_cor <- cor_ref %>%
+  pmap(function(var_1, var_2){
+    
+    ds.cor(
+      x = paste0("analysis_df$", var_1),
+      y = paste0("analysis_df$", var_2),
+      type = "split"
+    )
+  })
+    
+save(btp_cor, file = here("data", "btp_cor_preg.RData"))
+
+################################################################################
+# 6. Box plots using Demetris' function  
 ################################################################################
 
-## ---- Variables which exist for all cohorts ----------------------------------
-violin_all.data <- dh.getAnonPlotData(
+## ---- Polution ---------------------------------------------------------------
+violin_pol.data <- dh.getAnonPlotData(
   df = "analysis_df", 
-  vars = c(
-    "no2_preg", "pm25_preg", "ndvi300_preg", "ndvi300_1", "green_dist_preg", 
-    "green_dist_1", "blue_dist_preg", "blue_dist_1"))
+  vars = c("no2_preg", "pm25_preg"))
+
+## ---- Natural spaces ---------------------------------------------------------
+violin_nat.data <- dh.getAnonPlotData(
+  df = "analysis_df", 
+  vars = c("ndvi300_preg", "green_dist_preg", "blue_dist_preg"))
 
 ## ---- Variables not present for INMA -----------------------------------------
 violin_built.data <- dh.getAnonPlotData(
   df = "analysis_df", 
   vars = c(
-  "bdens300_preg", "bdens300_1", "fdensity300_preg", "fdensity300_1", 
-  "frichness300_preg", "frichness300_1", "landuseshan300_preg", 
-  "landuseshan300_1", "walkability_mean_preg", "walkability_mean_1", 
-  "agrgr_preg", "agrgr_1", "urbgr_preg", "urbgr_1"), 
-  conns = conns[c("alspac", "dnbc", "genr", "moba", "ninfea")])
+  "bdens300_preg", "fdensity300_preg", "frichness300_preg", 
+  "landuseshan300_preg",  "walkability_mean_preg", "agrgr_preg", "urbgr_preg"), 
+  conns = conns[c("alspac", "dnbc", "genr", "moba", "ninfea", "eden_nan", 
+                  "eden_poit")])
 
 ## ---- LU natural green -------------------------------------------------------
-violin_nat.data <- dh.getAnonPlotData(
+violin_lu.data <- dh.getAnonPlotData(
   df = "analysis_df", 
   vars = c("natgr_preg", "natgr_1"),
-  conns = conns[c("alspac", "dnbc", "genr", "ninfea")])
+  conns = conns[c("alspac", "dnbc", "genr", "ninfea", "eden_nan", "eden_poit")])
 
 ## ---- Lden -------------------------------------------------------------------
 violin_noise.data <- dh.getAnonPlotData(
   df = "analysis_df", 
   vars = "lden_preg", 
-  conns = conns[c("inma", "genr", "moba", "ninfea")])
+  conns = conns[c("inma_sab", "genr", "moba", "ninfea", "eden_nan", "eden_poit")])
 
 ## ---- Combine ----------------------------------------------------------------
 violin_out <- c(
-  violin_all.data, violin_built.data, violin_noise.data, violin_nat.data)
+  violin_pol.data, violin_nat.data, violin_built.data, violin_noise.data, 
+  violin_lu.data)
 
 save(violin_out, file = here("data", "violin_out.RData"))
 
 
 ################################################################################
-# 6. Exposure - outcome associations: model formulae  
+# 7. Exposure - outcome associations: model formulae  
 ################################################################################
 cohorts <- names(conns)
 
@@ -239,7 +291,7 @@ dh.glmWrap <- function(x, type, dummy_suff = "_dummy", data = "analysis_df"){
 
 
 ################################################################################
-# 7. Run models  
+# 8. Run models  
 ################################################################################
 
 ## ---- Natural spaces ---------------------------------------------------------
@@ -261,7 +313,7 @@ grey.fit <- grey.mod %>%
 
 
 ################################################################################
-# 8. Get coefficients for plots   
+# 9. Get coefficients for plots   
 ################################################################################
 
 ## ---- Natural spaces ---------------------------------------------------------
@@ -313,7 +365,7 @@ save(single_reg.out, file = here("data", "single_reg.RData"))
 save.image()
 
 ################################################################################
-# 6. Create subsets for stratified odds ratios  
+# 10. Create subsets for stratified odds ratios  
 ################################################################################
 
 ## ---- NDVI -------------------------------------------------------------------
@@ -372,7 +424,7 @@ datashield.workspace_save(conns, "env_pnd_9a")
 conns  <- datashield.login(logindata, restore = "env_pnd_9a")
 
 ################################################################################
-# 7. Stratified odds ratios  
+# 11. Stratified odds ratios  
 ################################################################################
 ndvi_strat <- ndvi_ref %>%
   pmap(function(new_df_name, cohort, ...){
