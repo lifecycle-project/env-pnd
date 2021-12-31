@@ -7,8 +7,10 @@
 ################################################################################
 
 library(remotes)
-install_github("lifecycle-project/dsHelper", ref = "newgetstats")
+install_github("lifecycle-project/dsHelper")
 library(dsHelper)
+
+dh.makeIQR
 
 remove.packages("dsHelper")
 
@@ -83,8 +85,8 @@ cohorts_tables <- bind_rows(
   tibble(
     cohort = "moba",
     table = c(
-      "lc_moba_core_2_1.2_1_core_2021_2_non_rep_environment_depression", 
-      "lc_moba_core_2_1.2_1_core_2021_1_yearly_rep_environment_depression")),
+      "lc_moba_core_2_1.2_1_core_2021_7_non_rep_urban_environment_postnatal_depression", 
+      "lc_moba_core_2_1.2_1_core_2021_7_yearly_rep_urban_environment_postnatal_depression")),
   tibble(
     cohort = "ninfea",
     table = c(
@@ -99,6 +101,7 @@ cohorts_tables <- bind_rows(
 
 ## ---- Assign tables ----------------------------------------------------------
 cohorts_tables %>%
+  dplyr::filter(cohort == "moba") %>%
   pwalk(function(cohort, table, type){
     
     datashield.assign(
@@ -132,6 +135,9 @@ available <- list(
 
 available$nonrep %>% print(n = Inf)
 available$yearrep %>% print(n = Inf)
+
+ds.summary("nonrep$birth_month")
+
 
 
 ################################################################################
@@ -260,10 +266,8 @@ conns  <- datashield.login(logindata, restore = "env_pnd_4")
 
 
 ################################################################################
-# 6. Create baseline variables from non repeated tables 
+# 6. Recode parity
 ################################################################################
-
-## ---- Parity -----------------------------------------------------------------
 
 # We need to recode parity as a binary variable as there are issues later with 
 # disclosive information when we run the models if we leave it ordinal.
@@ -433,6 +437,33 @@ datashield.workspace_save(conns, "env_pnd_8")
 conns <- datashield.login(logindata, restore = "env_pnd_8")
 
 ################################################################################
+# 11. Create combined area deprivation variable  
+################################################################################
+
+# MoBa only has it in the first year of birth.
+ds.assign(
+  toAssign = "env_pnd$areases_tert_preg", 
+  newobj = "areases_tert",
+  datasources = conns[names(conns) != "moba"]
+) 
+
+ds.assign(
+  toAssign = "env_pnd$areases_tert_1", 
+  newobj = "areases_tert",
+  datasources = conns["moba"]
+)
+
+## ---- Join back in -----------------------------------------------------------
+ds.dataFrame(
+  x = c("env_pnd", "areases_tert"), 
+  newobj = "env_pnd")
+
+## ---- Save progress ----------------------------------------------------------
+datashield.workspace_save(conns, "env_pnd_9")
+conns <- datashield.login(logindata, restore = "env_pnd_9")
+
+
+################################################################################
 # 11. Create sub-cohorts for inma and eden  
 ################################################################################
 sub_coh <- c("inma_gip", "inma_sab", "eden_nan", "eden_poit")
@@ -453,8 +484,8 @@ tibble(
   })
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_9")
-conns <- datashield.login(logindata, restore = "env_pnd_9")
+datashield.workspace_save(conns, "env_pnd_10")
+conns <- datashield.login(logindata, restore = "env_pnd_10")
 
 ################################################################################
 # 12. Create cohort dummy variables  
@@ -509,8 +540,8 @@ ds.dataFrame(
 )
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_10")
-conns <- datashield.login(logindata, restore = "env_pnd_10")
+datashield.workspace_save(conns, "env_pnd_11")
+conns <- datashield.login(logindata, restore = "env_pnd_11")
 
 ################################################################################
 # 13. Define valid cases: subjects with outcome and >= 1 exposure
@@ -532,7 +563,7 @@ exp.vars <- c(
 out.vars <- "ppd"
 
 cov.vars <- c(
-  "edu_m_0", "eusilc_income_quintiles", "areases_tert_preg", "ethn1_m", 
+  "edu_m_0", "eusilc_income_quintiles", "areases_tert", "ethn1_m", 
   "ethn2_m", "ethn3_m", "agebirth_m_y", "parity_bin", "sex", "birth_month", 
   "birth_year", "preg_psych", "prepreg_psych", "prepreg_dep", "preg_dia", 
   "preg_ht", "ga_bj")
@@ -565,23 +596,9 @@ ds.Boole(
 
 ds.table("valid_case")
 
-## ---- Next create another variable indicating whether a valid case -----------
-#ds.make(
-#  toAssign = "any_exposure+any_outcome", 
-#  newobj = "n_exp_out")
-
-#ds.Boole(
-#  V1 = "n_exp_out", 
-#  V2 = "2", 
-#  Boolean.operator = "==", 
-#  na.assign = 0, 
-#  newobj = "valid_case")
-
-#ds.summary("valid_case")
-
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_11")
-conns <- datashield.login(logindata, restore = "env_pnd_11")
+datashield.workspace_save(conns, "env_pnd_12")
+conns <- datashield.login(logindata, restore = "env_pnd_12")
 
 ################################################################################
 # 11. Create analysis dataset  
@@ -610,60 +627,32 @@ var_index %>%
       datasources = conns[.y]))
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_12")
-conns <- datashield.login(logindata, restore = "env_pnd_12")
+datashield.workspace_save(conns, "env_pnd_13")
+conns <- datashield.login(logindata, restore = "env_pnd_13")
 
 ################################################################################
 # 12. Create IQR versions of variables  
 ################################################################################
-cohorts <- names(conns)
+all_exposures <- c(
+  "ndvi300_preg", "ndvi300_1", "no2_preg", "no2_1", "pm25_preg", "pm25_1", 
+  "pm10_preg", "pm10_1" , "frichness300_preg", "frichness300_1", 
+  "walkability_mean_preg", "walkability_mean_1", "popdens_preg", "popdens_1")
 
-iqr_ref <- tribble(
-  ~var, ~coh,
-  "ndvi300_preg", paste(cohorts, collapse = ","),
-  "ndvi300_1", paste(cohorts, collapse = ","),
-  "no2_preg", paste(cohorts, collapse = ","),
-  "no2_1", paste(cohorts, collapse = ","),
-  "pm25_preg", paste(cohorts, collapse = ","),
-  "pm25_1", paste(cohorts, collapse = ","),
-  "pm10_preg", paste(cohorts[!cohorts %in% c(
-    "alspac", "dnbc", "inma_gip", "rhea")], collapse = ","),  
-  "pm10_1" , paste(cohorts[!cohorts %in% c(
-    "alspac", "dnbc", "inma_gip", "rhea", "eden_nan", "eden_poit")], collapse = ","),
-  "frichness300_preg", paste(cohorts[!cohorts == "rhea"], collapse = ","),
-  "frichness300_1", paste(cohorts[!cohorts == "rhea"], collapse = ","),
-  "walkability_mean_preg", paste(cohorts[!cohorts == "rhea"], collapse = ","),
-  "walkability_mean_1", paste(cohorts[!cohorts == "rhea"], collapse = ","),
-  "popdens_preg", paste(cohorts[!cohorts == "rhea"], collapse = ","),
-  "popdens_1",  paste(cohorts[!cohorts == "rhea"], collapse = ",")
-)
+dh.makeIQR(
+  df = "analysis_df", 
+  vars = all_exposures, 
+  type = "pooled")
 
-iqr_ref %>%
-  pmap(function(var, coh){
-    dh.makeIQR(
-      df = "analysis_df", 
-      vars = var, 
-      type = "pooled",
-      conns = conns[unlist(strsplit(coh, ","))]
-  )
-})
-
-iqr_ref %>%
-  pmap(function(var, coh){
-    dh.makeIQR(
-      df = "analysis_df", 
-      vars = var, 
-      type = "separate",
-      conns = conns[unlist(strsplit(coh, ","))]
-    )
-  })
+dh.makeIQR(
+  df = "analysis_df", 
+  vars = all_exposures, 
+  type = "separate")
 
 ds.colnames("analysis_df")
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_13")
-conns <- datashield.login(logindata, restore = "env_pnd_13")
-
+datashield.workspace_save(conns, "env_pnd_14")
+conns <- datashield.login(logindata, restore = "env_pnd_14")
 
 ################################################################################
 # 13. Fix more variables  
@@ -702,5 +691,33 @@ ds.dataFrame(
 ds.levels("analysis_df$lden_c_preg")
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_14")
-conns <- datashield.login(logindata, restore = "env_pnd_14")
+datashield.workspace_save(conns, "env_pnd_15")
+conns <- datashield.login(logindata, restore = "env_pnd_15")
+
+################################################################################
+# 14. Set reference levels of binary variables to 0  
+################################################################################
+refvars <- c("greenyn300_preg", "blueyn300_preg")
+
+refvars %>%
+  map(
+    ~ds.changeRefGroup(
+      x = paste0("analysis_df$", .),
+      ref = "0",
+      newobj = .,
+      reorderByRef = FALSE)
+  )
+
+dh.dropCols(
+  df = "analysis_df", 
+  vars = refvars
+)
+
+ds.dataFrame(
+  x = c("analysis_df", refvars), 
+  newobj = "analysis_df"
+)
+
+## ---- Save progress ----------------------------------------------------------
+datashield.workspace_save(conns, "env_pnd_16")
+conns <- datashield.login(logindata, restore = "env_pnd_16")

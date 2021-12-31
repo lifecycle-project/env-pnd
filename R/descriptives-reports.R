@@ -5,94 +5,78 @@
 ## Author: Tim Cadman
 ## Email: t.cadman@bristol.ac.uk
 ################################################################################
+
+library(DSI)
+library(DSOpal)
+library(dsBaseClient)
+library(purrr)
+library(dplyr)
+library(magrittr)
+library(tidyr)
+library(stringr)
+library(remotes)
+install_github("lifecycle-project/ds-helper")
 library(dsHelper)
+library(forcats)
+library(here)
 
+ls("package:dsBaseClient")
 
-conns <- datashield.login(logindata, restore = "env_pnd_14")
-
-################################################################################
-# 1. Define variables  
-################################################################################
-green.vars <- c(
-  "ndvi300_preg", "ndvi300_1", "greenyn300_preg", "blueyn300_preg", 
-   "greenyn300_1", "blueyn300_1")
-
-pol.vars <- c("no2_preg", "no2_1", "pm25_preg", "pm25_1", "pm10_preg", "pm10_1")
-
-noise.vars <- c("lden_preg", "lden_1", "lden_c_preg", "lden_c_1")
-
-lu.vars <- c(
-  "frichness300_preg", "frichness300_1", "walkability_mean_preg", 
-  "walkability_mean_1", "popdens_preg", "popdens_1")
-
-out.vars <- "ppd"
-
-cov.vars <- c(
-  "edu_m_0", "areases_tert_preg", "ethn3_m", "agebirth_m_y", "parity_bin", 
-  "sex", "birth_month", "birth_year", "prepreg_dep", "prepreg_psych")
-
-all.vars <- c(green.vars, pol.vars, noise.vars, lu.vars, out.vars,cov.vars)
+conns <- datashield.login(logindata, restore = "env_pnd_10")
 
 ################################################################################
-# 2. Descriptives for analysis dataset  
+# 1. Define variable groups  
 ################################################################################
-desc_green <- dh.getStats(
-  df = "analysis_df", 
-  vars = green.vars
-)
+sep.vars <- c("areases_tert_preg", "areases_tert_1", "areases_quint_preg", 
+              "areases_quint_1" )
 
-desc_pol <- dh.getStats(
-  df = "analysis_df", 
+pol.vars <- c("no2_preg", #"no2_1", 
+              "pm25_preg", #"pm25_1", 
+              "lden_preg", "lden_1")
+
+nat.vars <- c("ndvi300_preg", "ndvi300_1", "green_dist_preg", "green_dist_1",
+              "blue_dist_preg" , "blue_dist_1")
+
+lu.vars <- c("bdens300_preg", "bdens300_1", "urbgr_preg", "urbgr_1",            
+             "natgr_preg", "natgr_1", "agrgr_1", "walkability_mean_preg", 
+             "walkability_mean_1", "landuseshan300_preg", 
+             "landuseshan300_1", "frichness300_preg", "frichness300_1", 
+             "fdensity300_preg", "fdensity300_1", "agrgr_preg")
+
+################################################################################
+# 3. Get descriptives   
+################################################################################
+#sep.desc <- dh.getStats(
+#  df = "analysis_df", 
+#  vars = sep.vars
+#  )
+
+pol.desc <- dh.getStats(
+  df = "analysis_df",
   vars = pol.vars
-)
+  )
 
-desc_noise <- dh.getStats(
-  df = "analysis_df", 
-  vars = noise.vars
-)
+nat.desc <- dh.getStats(
+  df = "analysis_df",
+  vars = nat.vars
+  )
 
-desc_lu <- dh.getStats(
-  df = "analysis_df", 
+lu.desc <- dh.getStats(
+  df = "analysis_df",
   vars = lu.vars
-)
+  )
 
-desc_out <- dh.getStats(
-  df = "analysis_df", 
-  vars = out.vars
-)
-
-desc_cov <- dh.getStats(
-  df = "analysis_df", 
-  vars = cov.vars
-)
-
-descriptives <- list(
-  desc_green, desc_pol, desc_noise, desc_lu, desc_out, desc_cov) %>%
+exposures.desc <- list(pol.desc, nat.desc, lu.desc) %>%
   pmap(bind_rows)
 
-save.image()
+outcome.desc <- dh.getStats(
+  df = "analysis_df", 
+  vars = "ppd"
+  )
 
-desc_green$continuous %>% filter(cohort == "combined") %>% print(n = Inf)
+lu.desc$continuous %>% print(n = Inf) 
 
-
-################################################################################
-# 3. Descriptives for full sample   
-################################################################################
-descriptives_full <- dh.getStats(
-  df = "env_pnd", 
-  vars = all.vars
-)
-
-
-
-
-
-
-descriptives$continuous %>%
-  dplyr::filter(variable == "lden_preg" & !is.na(mean)) %>%
-  select(cohort, variable, perc_50, perc_5, perc_95)
-
-
+ds.summary("nonrep$lden_preg", datasources = conns["dnbc"])
 
 ################################################################################
 # 3. Write descriptives  
