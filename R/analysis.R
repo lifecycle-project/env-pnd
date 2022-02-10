@@ -6,201 +6,110 @@
 ## Email: t.cadman@bristol.ac.uk
 ################################################################################
 library(here)
-library(readr)
-install_github("timcadman/datashield-tim", ref = "main")
 library(dsTim)
 library(dsHelper)
+library(tidyverse)
 
 #remove.packages("dsTim")
 
-conns <- datashield.login(logindata, restore = "env_pnd_16")
+conns <- datashield.login(logindata, restore = "env_pnd_24")
+source("~/env-pnd/R/var-reference.R")
+
 
 ################################################################################
-# 1. Descriptive statistics   
+# 3. Descriptive statistics   
 ################################################################################
 
-## ---- Define variables -------------------------------------------------------
-green.vars <- c(
-  "ndvi300_preg", "ndvi300_1", "greenyn300_preg", "blueyn300_preg", 
-  "greenyn300_1", "blueyn300_1")
-
-pol.vars <- c("no2_preg", "no2_1", "pm25_preg", "pm25_1", "pm10_preg", "pm10_1")
-
-noise.vars <- c("lden_preg", "lden_1", "lden_c_preg", "lden_c_1")
-
-lu.vars <- c(
-  "frichness300_preg", "frichness300_1", "walkability_mean_preg", 
-  "walkability_mean_1", "popdens_preg", "popdens_1")
-
-out.vars <- "ppd"
-
-cov.vars <- c(
-  "edu_m_0", "areases_tert_preg", "ethn3_m", "agebirth_m_y", "parity_bin", 
-  "sex", "birth_month", "birth_year", "prepreg_dep", "prepreg_psych")
-
-all.vars <- c(green.vars, pol.vars, noise.vars, lu.vars, out.vars,cov.vars)
-
-## ---- Descriptives for analysis dataset --------------------------------------
-desc_green <- dh.getStats(
+## ---- Analysis sample --------------------------------------------------------
+exp.desc <- dh.getStats(
   df = "analysis_df", 
-  vars = green.vars
+  vars = c(exp_preg.vars, exp_year_1.vars)
 )
 
-desc_pol <- dh.getStats(
-  df = "analysis_df", 
-  vars = pol.vars
-)
-
-desc_noise <- dh.getStats(
-  df = "analysis_df", 
-  vars = noise.vars
-)
-
-desc_lu <- dh.getStats(
-  df = "analysis_df", 
-  vars = lu.vars
-)
-
-desc_out <- dh.getStats(
-  df = "analysis_df", 
-  vars = out.vars
-)
-
-desc_cov <- dh.getStats(
+cov.desc <- dh.getStats(
   df = "analysis_df", 
   vars = cov.vars
 )
 
-descriptives <- list(
-  desc_green, desc_pol, desc_noise, desc_lu, desc_out, desc_cov) %>%
-  pmap(bind_rows)
-
-descriptives$categorical %>% 
-  filter(variable %in% c("prepreg_psych", "prepreg_dep")) %>%
-  print(n = Inf)
-
-## ---- Descriptives for full sample -------------------------------------------
-descriptives_full <- dh.getStats(
-  df = "env_pnd", 
-  vars = all.vars
+out.desc <- dh.getStats(
+  df = "analysis_df", 
+  vars = "ppd"
 )
 
-save.image()
+descriptives <- list(exp.desc, cov.desc, out.desc) %>%
+  pmap(bind_rows)
 
-ds.colnames("analysis_df")
-################################################################################
-# 2. Regression model definitions  
-################################################################################
-cohorts <- names(conns)
+save.image("~/env-pnd/4-feb-22.RData")
 
-cov_adj <- c("sex", "edu_m_0", "areases_tert", "agebirth_m_y", "parity_bin", 
-          "birth_year", "prepreg_psych")
+## ---- Excluded participants --------------------------------------------------
+exc.desc <- dh.getStats(
+  df = "baseline_df", 
+  
+)
 
-# Currently excluding birth_month as unavailable for moba
 
-exp_ref <- tibble(
-  name = c("ndvi", "green", "blue", "no2", "pm25", "pm10", "lden", "fac_rich", 
-           "walk", "pop_dens"), 
-  exposure = factor(
-    c("ndvi300_preg_iqr_p", "greenyn300_preg", "blueyn300_preg", 
-      "no2_preg_iqr_p", "pm25_preg_iqr_p", "pm10_preg_iqr_p", "lden_c_preg", 
-      "frichness300_preg_iqr_p", "walkability_mean_preg_iqr_p", 
-      "popdens_preg_iqr_p"), ordered = TRUE), 
-  full_name = c("NDVI", "Major green space within 300m", 
-                "Major blue space within 300m", "N02", "PM2.5", "PM10", "Lden", 
-                "Facility richness", "Walkability", "Population density"))
 
-avail_exp <- dh.anyData(df = "analysis_df", vars = exp_ref %>% pull(exposure))
-avail_cov <- dh.anyData(df = "analysis_df", vars = cov_adj)
-
-## ---- Create a list of available cohorts for each analysis -------------------
-single.mod <- avail_exp %>%
-  mutate(variable = factor(
-    variable, 
-    levels = exp_ref$exposure, 
-    ordered = TRUE)) %>%
-  group_by(variable) %>%
-  group_split %>%
-  map(~bind_rows(., avail_cov)) %>%
-  map(function(x){
-    x %>% 
-      select(-variable) %>% 
-      dplyr::select(where(function(x) all(x) == TRUE)) %>%
-      colnames}) %>%
-  set_names(exp_ref$exposure) %>% 
-  imap(function(.x, .y){
-    out <- list(
-      exposure = .y, 
-      outcome = "ppd",
-      covariates = cov_adj,
-      cohorts = .x)}) %>%
-  set_names(exp_ref$name)
 
 ################################################################################
-# 3. Exploring missingness  
+# 4. MISSING DATA
 ################################################################################
 ################################################################################
-# Define models  
+# 4a. Define models  
 ################################################################################
+conns <- datashield.login(logindata, restore = "env_pnd_23")
 
-## ---- New models for complete cases ------------------------------------------
-single_miss.mod <- single.mod %>% map(dt.modToMiss)
+avail_exp_miss <- dh.anyData(
+  df = "analysis_df", 
+  vars = exposure.ref$variable)
+
+avail_cov_miss <- dh.anyData(
+  df = "analysis_df", 
+  vars = "sex")
+
+single_miss.mod <- dt.buildModels(
+  avail_exp = avail_exp_miss, 
+  avail_cov = avail_cov_miss) %>%
+  mutate(name = paste0(variable, "_miss"))
 
 ################################################################################
-# Define complete cases  
+# 4b. Define complete cases  
 ################################################################################
 single_miss.mod %>%
-  map(., function(x){
+  pmap(function(variable, name, cohorts, covariates, outcome, ...){
     
-    pmap(x, function(vars, name, cohorts){
-      
-      dt.defineCompleteCase(
-        df = "env_pnd", 
-        vars = vars, 
-        newobj = name,
-        conns = conns[cohorts]
-      )
-    })
+    dt.defineCompleteCase(
+      df = "baseline_df", 
+      vars = c(variable, unlist(covariates), outcome), 
+      newobj = name,
+      conns = conns[cohorts]
+    )
   })
 
 datashield.workspace_save(conns, "env_pnd_miss_1")
 conns <- datashield.login(logindata, restore = "env_pnd_miss_1")
 
-
 ################################################################################
-# Get stats of these created variables  
-################################################################################
-################################################################################
-# Prepare data  
+# 4c. Prepare data  
 ################################################################################
 
 ## ---- Tibble of variables to join --------------------------------------------
 tojoin <- single_miss.mod %>%
-  map(function(x){
-    out <- tibble(
-      var = x$name, 
-      cohort = x$cohort)}) %>%
-  setNames(., paste0("tmp_", seq(1, length(.), 1))) %>%
-  bind_rows %>%
   group_by(cohort) %>%
-  group_split
-
+  group_split 
 
 ## ---- Join into one dataframe ------------------------------------------------
 tojoin %>%
   map(function(x){
     
     ds.dataFrame(
-      x = x$var,
+      x = x$name,
       newobj = "missing",
       datasources = conns[x$cohort[[1]]]
     )
   })
 
-
 datashield.workspace_save(conns, "env_pnd_miss_2")
 conns <- datashield.login(logindata, restore = "env_pnd_miss_2")
-
 
 ## ---- Fill missing columns ---------------------------------------------------
 ds.dataFrameFill("missing", "missing")
@@ -208,111 +117,356 @@ ds.dataFrameFill("missing", "missing")
 datashield.workspace_save(conns, "env_pnd_miss_3")
 conns <- datashield.login(logindata, restore = "env_pnd_miss_3")
 
-
 ## ---- Fix levels -------------------------------------------------------------
 ds.colnames("missing")[[1]] %>%
   map(
     ~ds.asFactor(
-      input.var.name = paste0("missing$", .), 
-      newobj.name = paste0(., "_fact"))
+      input.var.name = paste0("missing$", .x), 
+      newobj.name = paste0(.x, "_f"))
   )
 
 datashield.workspace_save(conns, "env_pnd_miss_4")
 conns <- datashield.login(logindata, restore = "env_pnd_miss_4")
 
-
 ## ---- Join back into one dataframe -------------------------------------------
 ds.dataFrame(
-  x = paste0(ds.colnames("missing")[[1]], "_fact"),
-  newobj = "missing")
+  x = paste0(ds.colnames("missing")[[1]], "_f"),
+  newobj = "missing_f")
 
 ## ---- Save progress ----------------------------------------------------------
 datashield.workspace_save(conns, "env_pnd_miss_5")
 conns <- datashield.login(logindata, restore = "env_pnd_miss_5")
 
-
 ################################################################################
-# Now extract descriptives  
+# 4d. Extract descriptives  
 ################################################################################
-miss_vars <- ds.colnames("missing")[[1]]
+miss_vars <- ds.colnames("missing_f")[[1]]
 
 miss.descriptives <- dh.getStats(
-  df = "missing", 
+  df = "missing_f", 
   vars = miss_vars
+)
+
+save.image("~/env-pnd/4-feb-22.RData")
+
+################################################################################
+# 4e. Regression models to see whether outcome is associated with missingness  
+################################################################################
+single_miss.fit <- single_miss.mod %>%
+  pmap(function(formula, cohort, ...){
+    
+    ds.glm(
+      formula = formula, 
+      data = "baseline_df", 
+      family = "binomial", 
+      datasources = conns[cohort])
+  })
+
+single_miss.mod <- single_miss.mod %>%
+  mutate(model = single_miss.fit)
+
+save.image("~/env-pnd/4-feb-22.RData")
+
+
+################################################################################
+# 3. Summarise availability of data
+################################################################################
+
+## ---- Define exposures -------------------------------------------------------
+exp.vars <- c(
+  "no2_preg_iqr_c", "pm25_preg_iqr_c", "pm10_preg_iqr_c", "lden_c_preg", 
+  "ndvi300_preg_iqr_c", "greenyn300_preg", "blueyn300_preg", 
+  "frichness300_preg_iqr_c", "walkability_mean_preg_iqr_c", 
+  "popdens_preg_iqr_c")
+
+## ---- Check availability -----------------------------------------------------
+avail_exp <- dh.anyData(
+  df = "analysis_df", 
+  vars = exp.vars)
+
+avail_cov <- dh.anyData(
+  df = "analysis_df", 
+  vars = cov.vars)
+
+joint_cov <- list(
+  pop = dh.anyData("analysis_df", c(cov.vars, "popdens_preg_iqr_c")),
+  green = dh.anyData("analysis_df", c(cov.vars, "ndvi300_preg_iqr_c")),
+  pop_green = dh.anyData(
+    "analysis_df", c(cov.vars, "popdens_preg_iqr_c", "ndvi300_preg_iqr_c")),
+  noise = dh.anyData("analysis_df", c(cov.vars, "lden_c_preg")),
+  polution = dh.anyData("analysis_df", c(cov.vars, "no2_preg_iqr_c")),
+  noise_polution = dh.anyData(
+    "analysis_df", c(cov.vars, "lden_c_preg", "no2_preg_iqr_c"))
 )
 
 save.image()
 
-ds.cor("analysis_df$no2_preg", "analysis_df$ppd")
 
 ################################################################################
-# Regression models to see whether outcome is associated with missingness  
+# 3. Build models
 ################################################################################
 
-## ---- Function  --------------------------------------------------------------
-dt.makeMissForm <- function(x = single_miss.mod, df = "env_pnd", 
-                            outcome = "ppd"){
-  
-  mod <- list(
-    model = paste0(
-      paste0(
-        x$name,
-        "~",  
-        df, "$", str_subset(x$vars[[1]], outcome)),
-      "+", df, "$sex",
-      "+", paste0(paste0(df, "$", x$cohorts[-1]), "_d", collapse = "+")), 
-    cohorts = x$cohorts
-  )
-}
+## ---- Single exposure --------------------------------------------------------
+single.mod <- dt.buildModels(
+  avail_exp = avail_exp,
+  avail_cov = avail_cov)
 
-ds.colnames("env_pnd")
+## ---- Joint exposures: air pollution ------------------------------------------
+air_exp <- avail_exp %>%
+  dplyr::filter(
+    variable %in% c("no2_preg_iqr_c", "pm25_preg_iqr_c", "pm10_preg_iqr_c"))
 
-## ---- Maternal education ----------------------------------------------------- 
-single_miss.fit <- single_miss.mod %>%
-  dt.changeForm(
-    var = c("eden_poit", "eden_nan", "inma_sab", "inma_gip"), 
-    type = "remove", 
-    category = "cohorts") %>%
-  map(dt.makeMissForm) %>%
-  map(dt.glmWrap, type = "ipd", df = NULL)
+joint_air.mod <- list(
+  adj_pop = dt.buildModels(air_exp, joint_cov$pop),
+  adj_green = dt.buildModels(air_exp, joint_cov$green),
+  adj_pop_green = dt.buildModels(air_exp, joint_cov$pop_green))
 
-save.image()
+## ---- Joint exposures: traffic noise -----------------------------------------
+noise_exp <- avail_exp %>% dplyr::filter(variable == "lden_c_preg")
 
-## Being a bit lazy: excluding subcohorts across the board that break it 
-## for some models only. Revisit. 
+joint_noise.mod <- list(
+  adj_pop = dt.buildModels(noise_exp, joint_cov$pop),
+  adj_green = dt.buildModels(noise_exp, joint_cov$green),
+  adj_pop_green = dt.buildModels(noise_exp, joint_cov$pop_green))
+
+## ---- Joint exposures: natural spaces ----------------------------------------
+nat_exp <- avail_exp %>% dplyr::filter(
+  variable %in% c("ndvi300_preg_iqr_c", "greenyn300_preg", "blueyn300_preg")
+)
+
+joint_natural.mod <- list(
+  adj_noise = dt.buildModels(nat_exp, joint_cov$noise),
+  adj_polution = dt.buildModels(nat_exp, joint_cov$polution),
+  adj_noise_polution = dt.buildModels(nat_exp, joint_cov$noise_polution))
+
+## ---- Joint exposures: urban environment -------------------------------------
+urban_exp <- avail_exp %>% dplyr::filter(
+  variable %in% c("frichness300_preg_iqr_c", "walkability_mean_preg_iqr_c", 
+                  "popdens_preg_iqr_c"))
+
+joint_urb.mod <- list(
+  adj_noise = dt.buildModels(urban_exp, joint_cov$noise),
+  adj_polution = dt.buildModels(urban_exp, joint_cov$polution),
+  adj_noise_polution = dt.buildModels(urban_exp, joint_cov$noise_polution))
+
+## ---- Joint exposures: traffic and air pollution ------------------------------
+joint_air_traffic <- dt.buildModels(air_exp, joint_cov$noise)
+
+save.image("~/env-pnd/4-feb-22.RData")
+
 
 ################################################################################
-# 4. Main models  
+# MAIN MODELS
 ################################################################################
 conns <- datashield.login(logindata, restore = "env_pnd_16")
 
-## ---- Single exposure --------------------------------------------------------
-single_works.mod <- single.mod %>%
+################################################################################
+# 5. Single exposure, unadjusted
+################################################################################
+single_m1.fit = list(
+  ipd = single_m1.mod %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = single_m1.mod %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+save.image()
+################################################################################
+# 6. Single exposure, adjusted
+################################################################################
+single_m2_fixed.mod <- single_m2.mod %>%
   dt.changeForm(
     elements = "pop_dens", 
     vars = "inma_gip", 
     category = "cohorts", 
-    type = "remove") %>%
-  dt.changeForm(
-    elements = names(single.mod), 
-    vars = "dnbc", 
-    category = "cohorts", 
-    type = "remove")
+    type = "remove") 
 
-single.fit = list(
-  ipd = single_works.mod %>%
+single_m2.fit = list(
+  ipd = single_m2_fixed.mod %>%
     map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
     map(dt.glmWrap, type = "ipd", family = "binomial"), 
-  slma = single_works.mod %>%
+  slma = single_m2_fixed.mod %>%
     map(dt.makeGlmForm, type = "slma") %>%
     map(dt.glmWrap, type = "slma", family = "binomial")) 
 
 save.image()
 
 
+
 ################################################################################
-# 5. Diagnostics  
+# 7. Multiple exposures
 ################################################################################
+
+## ---- Air polution -----------------------------------------------------------
+joint_air_pd.fit = list(
+  ipd = joint_air.mod$adj_pd %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_air.mod$adj_pd %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+joint_air_gs.fit = list(
+  ipd = joint_air.mod$adj_gs %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_air.mod$adj_gs %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+joint_air_pd_gs.fit = list(
+  ipd = joint_air.mod$adj_pd_gs %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_air.mod$adj_pd_gs %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+## ---- Road traffic noise -----------------------------------------------------
+joint_noise_pd.fit = list(
+  ipd = joint_noise.mod$adj_pd %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_noise.mod$adj_pd %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+joint_noise_gs.fit = list(
+  ipd = joint_noise.mod$adj_gs %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_noise.mod$adj_gs %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+joint_noise_pd_gs.fit = list(
+  ipd = joint_noise.mod$adj_pd_gs %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_noise.mod$adj_pd_gs %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial"))
+
+## ---- Natural spaces ---------------------------------------------------------
+joint_nat_tn.fit = list(
+  ipd = joint_nat.mod$adj_tn %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_nat.mod$adj_tn %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+joint_nat_pl.fit = list(
+  ipd = joint_nat.mod$adj_pl %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_nat.mod$adj_pl %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+joint_nat_tn_pl.fit = list(
+  ipd = joint_nat.mod$adj_tn_pl %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_nat.mod$adj_tn_pl %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+## ---- Urban environment ------------------------------------------------------
+joint_urb_tn.fit = list(
+  ipd = joint_urb.mod$adj_tn %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_urb.mod$adj_tn %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+joint_urb_pl.fit = list(
+  ipd = joint_urb.mod$adj_pl %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_urb.mod$adj_pl %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+joint_urb_tn_pl.fit = list(
+  ipd = joint_urb.mod$adj_tn_pl %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_urb.mod$adj_tn_pl %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+## ---- Joint pollution & traffic noise -----------------------------------------
+joint_air_traf.fit = list(
+  ipd = joint_air_traffic %>%
+    map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+    map(dt.glmWrap, type = "ipd", family = "binomial"), 
+  slma = joint_air_traffic %>%
+    map(dt.makeGlmForm, type = "slma") %>%
+    map(dt.glmWrap, type = "slma", family = "binomial")) 
+
+save.image()
+
+################################################################################
+# 8. Diagnostics  
+################################################################################
+################################################################################
+# Correlations between SEP variables and exposures
+################################################################################
+diagModelBuilder <- function(cov_avail, exposure){
+  avail_exp %>%
+    mutate(variable = factor(
+      variable, 
+      levels = exp_ref$exposure, 
+      ordered = TRUE)) %>%
+    group_by(variable) %>%
+    group_split %>%
+    map(~bind_rows(., cov_avail)) %>%
+    map(function(x){
+      x %>% 
+        select(-variable) %>% 
+        dplyr::select(where(function(x) all(x) == TRUE)) %>%
+        colnames}) %>%
+    set_names(exp_ref$exposure) %>% 
+    imap(function(.x, .y){
+      out <- list(
+        exposure = exposure, 
+        outcome = .y,
+        covariates = NULL,
+        cohorts = .x)}) %>%
+    set_names(exp_ref$name)
+}
+
+cont_exp <- c("ndvi", "no2", "pm25", "pm10", "fac_rich", "walk", "pop_dens")
+
+
+## ---- Maternal education -----------------------------------------------------
+edu_avail <- dh.anyData(df = "analysis_df", vars = "edu_m_0")
+edu.mod <- diagModelBuilder(edu_avail, "edu_m_0")
+
+edu.fit <- edu.mod[cont_exp] %>%
+  map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+  map(dt.glmWrap, type = "ipd", family = "gaussian") 
+
+## ---- Area deprivation -------------------------------------------------------
+area_avail <- dh.anyData(df = "analysis_df", vars = "areases_tert")
+area.mod <- diagModelBuilder(area_avail, "areases_tert")
+
+area.fit <- area.mod[cont_exp] %>%
+  dt.changeForm(
+    elements = "pop_dens", 
+    vars = "inma_gip", 
+    category = "cohorts", 
+    type = "remove") %>%
+  map(dt.makeGlmForm, type = "ipd", dummy_suff = "_d") %>%
+  map(dt.glmWrap, type = "ipd", family = "gaussian") 
+
+save.image()
+
+
+
 
 ## Strange results for air polution, need to work out what is going on
 

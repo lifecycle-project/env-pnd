@@ -1,0 +1,11 @@
+full_name,n_perc
+NO2,46461 (64.7)
+PM2.5,46517 (64.78)
+PM10,27418 (66.19)
+lden,43264 (62.06)
+NDVI,49163 (68.46)
+Green space > 5000m2 within 300m,48283 (67.23)
+Blue space > 5000m2 within 300m,47598 (67.65)
+Facility richness,47030 (66.85)
+Walkability score,46319 (65.84)
+Population density,47845 (68.01)
