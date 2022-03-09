@@ -8,10 +8,8 @@
 library(here)
 library(readr)
 
-conns <- datashield.login(logindata, restore = "env_pnd_23")
-
-
-
+conns <- datashield.login(logindata, restore = "env_pnd_24")
+source("~/env-pnd/R/var-reference.R")
 ################################################################################
 # METHODS  
 ################################################################################
@@ -24,40 +22,34 @@ conns <- datashield.login(logindata, restore = "env_pnd_23")
 names(conns) %>% sort()
 
 ################################################################################
-# Maximum sample size
+# Left column
 ################################################################################
 
 ## ---- Baseline sample --------------------------------------------------------
+baseline_n <- ds.dim("baseline_df", type = "c")[[1]][[1]]
 
-## Defining this as all participants within areas where exposures were 
-## calculated
-ds.asFactor("baseline_valid", "baseline_valid")
-
-baseline_n <- ds.table("baseline_valid")$
-  output.list$TABLES.COMBINED_all.sources_counts[[2]]
-## ---- Excluded: no exposure or outcome ---------------------------------------
-ds.asFactor("some_vars", "some_vars")
-
-exp_out_n <- ds.table("some_vars")$
-  output.list$TABLES.COMBINED_all.sources_counts[[2]]
-
-## Excluded
-baseline_n - exp_out_n
-
-## Remaining
-exp_out_n
-
-## ---- Excluded: not live born ------------------------------------------------
-ds.asFactor("valid", "valid")
-
-final_n <- ds.table("valid")$
-  output.list$TABLES.COMBINED_all.sources_counts[[2]]
-
-## Excluded not live born
-exp_out_n - final_n
+## ---- Any exposure + outcome -------------------------------------------------
+some_exp_out_n <- ds.dim("some_exp_out_df", type = "c")[[1]][[1]]
 
 ## ---- Analysis dataset -------------------------------------------------------
-final_n
+analysis_n <- ds.dim("analysis_df", type = "c")[[1]][[1]]
+
+################################################################################
+# Right column
+################################################################################
+
+## ---- Excluded: no exposures or outcomes -------------------------------------
+baseline_n - some_exp_out_n
+
+## ---- Excluded: not live born or first born ----------------------------------
+some_exp_out_n - analysis_n
+
+################################################################################
+# Total excluded
+################################################################################
+excluded_n <- (baseline_n - some_exp_out_n) + (some_exp_out_n - analysis_n)
+
+save.image("~/env-pnd/4-feb-22.RData")
 
 ################################################################################
 # Table S1: Cohort Ns
@@ -131,8 +123,10 @@ btp <- btp_coh %>%
 
 write_csv(btp, path = here("tables", "btp_cor.csv"))
 
+
+
 ################################################################################
-# Table S4: Ns for complete cases   
+# Table S5: Ns for complete cases   
 ################################################################################
 cc.tab <- miss.descriptives$categorical %>%
   mutate(variable = str_remove(variable, "_miss_f")) %>%
@@ -150,63 +144,186 @@ cc.tab <- miss.descriptives$categorical %>%
 write_csv(cc.tab, here("tables", "complete_cases.csv")) 
 
 ################################################################################
-# Table S5: Sample characteristics analysis sample vs excluded
+# Table S6: Sample characteristics analysis sample vs excluded
 ################################################################################
 
-
-
-
-
-makeSampleComp <- function(x){
+## ---- Simple function to make table ------------------------------------------
+makeSampleComp <- function(stats){
   
-  all_cat.vars <- c(
-    "ppd", "edu_m_0", "areases_tert_preg", "ethn3_m", "parity_bin", "sex",  
-    "greenyn300_preg", "blueyn300_preg", "lden_c_preg")
+  cat <- stats$categorical %>%
+    dplyr::filter(variable %in% s5_cat.vars & cohort == "combined" &
+                    category != "missing") %>%
+    mutate(value = paste0(value, " (", perc_valid, ")")) %>%
+    select(variable, category, value, cohort_n)
   
-  all_cont.vars <- c(
-    "agebirth_m_y", "birth_year", "ndvi300_preg", "no2_preg", "pm25_preg", 
-    "pm10_preg", "frichness300_preg", "walkability_mean_preg", "popdens_preg")
-  
-  tmp_1 <- x$continuous %>%
-    filter(variable %in% all_cont.vars & cohort == "combined") %>%
+  cont <- stats$continuous %>%
+    dplyr::filter(variable %in% s5_cont.vars & cohort == "combined") %>%
     mutate(value = paste0(perc_50, " (", perc_5, ",", perc_95, ")")) %>%
     select(variable, value, cohort_n) %>%
     mutate(category = NA)
   
-  tmp_2 <- x$categorical %>%
-    filter(
-      variable %in% all_cat.vars & cohort == "combined" &
-        category != "missing") %>%
-    mutate(value = paste0(value, " (", perc_valid, ")")) %>%
-    select(variable, category, value, cohort_n)
-  
-  out <- bind_rows(tmp_1, tmp_2)
+  out <- bind_rows(cat, cont)
   
 }
 
-a_sample.desc <- makeSampleComp(descriptives) %>% mutate(sample = "analysis")
-f_sample.desc <- makeSampleComp(descriptives_full) %>% mutate(sample = "full")
+## ---- Specify variables ------------------------------------------------------
+s5_cat.vars <- bind_rows(exp_preg.ref, cov.ref, out.ref) %>% 
+  dplyr::filter(type == "cat") %>%
+  pull(variable)
 
-sample_comp <- bind_rows(a_sample.desc, f_sample.desc) %>%
+s5_cont.vars <- bind_rows(exp_preg.ref, cov.ref, out.ref) %>% 
+  dplyr::filter(type == "cont") %>%
+  pull(variable)
+
+
+## ---- Make table -------------------------------------------------------------
+a_sample.desc <- makeSampleComp(descriptives) %>% 
+  mutate(sample = "analysis")
+
+e_sample.desc <- makeSampleComp(exc.desc) %>% 
+  mutate(sample = "excluded")
+
+sample_comp <- bind_rows(a_sample.desc, e_sample.desc) %>%
+  left_join(., full.ref, by = "variable") %>%
   mutate(variable = factor(
     variable, 
-    levels = c(
-      "sex", "birth_year", "ethn3_m", "edu_m_0", "agebirth_m_y", "parity_bin", 
-      "areases_tert_preg", "ppd", "ndvi300_preg", "greenyn300_preg", 
-      "blueyn300_preg", "no2_preg", "pm25_preg", "pm10_preg", 
-      "lden_c_preg", "frichness300_preg", "walkability_mean_preg", 
-      "popdens_preg")
-  )) %>%
-  arrange(sample, variable)
+    levels = c(exp_preg.vars, cov.vars, out.vars), 
+    ordered = TRUE)) %>%
+  arrange(sample, variable) %>%
+  left_join(., full_values.ref, by = c("variable", "category")) %>%
+  mutate(category = factor(
+    category, 
+    levels = dt.setLevels(full_values.ref),
+    ordered = TRUE)) %>%
+  arrange(sample, variable, category) %>%
+  pivot_wider(
+    names_from = sample,
+    values_from = value)
+dplyr::select(full_name, cat_label, value, sample)
+
+sample_comp %>% print(n = Inf)
+
+analysis_n
+excluded_n
 
 write_csv(sample_comp, here("tables", "sample-comparison.csv"))
 
 ################################################################################
-# Table S7: Ns for complete cases  
+# RESULTS  
 ################################################################################
- 
+makeTable <- function(stats = descriptives, cat_vars){
+  
+  out <- stats$categorical %>%
+    dplyr::filter(variable %in% cat_vars) %>%
+    mutate(
+      n_perc = paste0(value, " (", perc_total, ")")) %>%
+    select(variable, cohort, category, n_perc)
+  
+  return(out)
+  
+}
 
-### Next fix analysis df to include non-missing ppd
+################################################################################
+# Table 1: Sample characteristics
+################################################################################
+tab1.vars <- c(cov.vars, out.vars)
+
+table_1 <- makeTable(
+  stats = descriptives,
+  cat_vars = tab1.vars) %>%
+  dplyr::filter(cohort == "combined") %>%
+  left_join(., full.ref, by = "variable") %>%
+  left_join(., full_values.ref, by = c("variable", "category")) %>%
+  mutate(category = factor(
+    category, 
+    levels = dt.setLevels(
+      full_values.ref %>% dplyr::filter(variable %in% tab1.vars)),
+    ordered = TRUE)) %>%
+  arrange(full_name, category, n_perc) %>%
+  dplyr::select(full_name, cat_label, n_perc)
+
+write_csv(table_1, path = here("tables", "table_1.csv"))
+
+################################################################################
+# Table S7: Sample characteristics by cohort  
+################################################################################
+table5 <- makeTable(
+  stats = descriptives,
+  cat_vars = tab1.vars) %>%
+  dplyr::filter(cohort != "combined") %>%
+  left_join(., full.ref, by = "variable") %>%
+  left_join(., full_values.ref, by = c("variable", "category")) %>%
+  pivot_wider(
+    names_from = cohort,
+    values_from = n_perc) %>%
+  mutate(category = factor(
+    category, 
+    levels = dt.setLevels(
+      full_values.ref %>% dplyr::filter(variable %in% tab1.vars)),
+    ordered = TRUE)) %>%
+  arrange(full_name, category) %>%
+  dplyr::select(full_name, cat_label, alspac:rhea)
+
+write_csv(table5, path = here("tables", "table5.csv"))
+
+## ---- Cohort Ns for header ---------------------------------------------------
+cohort_ns <- descriptives$categorical %>%
+  dplyr::filter(variable == "sex" & category == 1 & cohort != "combined") %>%
+  dplyr::select(cohort, cohort_n)
+
+################################################################################
+# ADDITIONAL ADJUSTMENTS
+################################################################################
+adjustTab <- function(mdata, var, cohorts){
+  
+  adj_tmp.tab <- prepMainPlot(
+    mdata = mdata, 
+    ref = exp_preg_coef.ref) %>%
+    mutate(adjust = var) %>%
+    dplyr::filter(cohort != "combined")
+  
+  main.tab <- model_1.pdata %>%
+    mutate(adjust = "main") %>%
+    dplyr::filter(cohort %in% cohorts)
+  
+  adj.tab <- bind_rows(adj_tmp.tab, main.tab) %>%
+    arrange(full_name, adjust)
+  
+  adj.out <- adj.tab %>% 
+    mutate(across(est:uppci, ~round(., 2))) %>%
+    mutate(est_out = paste0(est, " (", lowci, ", ", uppci, ")")) %>%
+    dplyr::select(full_name, cohort_neat, est_out, adjust) %>%
+    pivot_wider(
+      names_from = "adjust", 
+      values_from = "est_out") %>%
+    dplyr::select(full_name, cohort_neat, main, var)
+  
+  return(adj.out)
+}
+
+################################################################################
+# Table S8: additional adjustment for ethnicity
+################################################################################
+eth.tab <- adjustTab(
+  mdata = model_3.mdata,
+  var = "ethnicity", 
+  cohorts = c("alspac", "bib", "genr")
+)
+
+write_csv(eth.tab, file = here("tables", "eth_adj.csv"))
+
+################################################################################
+# Table S9: additional adjustment for cohabitation
+################################################################################
+cohab.tab <- adjustTab(
+  mdata = model_4.mdata,
+  var = "cohab", 
+  cohorts = c("alspac", "bib", "dnbc", "genr", "moba")
+)
+
+write_csv(cohab.tab, file = here("tables", "cohab_adj.csv"))
+
+
 
 ################################################################################
 # Number of cohorts with data on each exposure  
@@ -241,62 +358,7 @@ cohortNExp("walkability_mean_preg")
 
 descriptives$categorical %>% dplyr::filter(variable == "lden_c_preg") %>% print(n = Inf)
 
-################################################################################
-# RESULTS  
-################################################################################
-makeTable <- function(stats = descriptives, cat_vars){
-  
-  out <- stats$categorical %>%
-    dplyr::filter(variable %in% cat_vars) %>%
-    mutate(
-      n_perc = paste0(value, " (", perc_total, ")")) %>%
-    select(variable, cohort, category, n_perc)
-  
-  return(out)
-  
-}
 
-################################################################################
-# Table 1: Covariates and outcome
-################################################################################
-cov.ref <- tibble(
-  var_name = c(
-  "birth_year_f", "birth_month_c",  "sex", "ethn3_m", "edu_m_0", "mat_age_f",  
-  "cohab", "parity_bin", "areases_tert", "prepreg_psych", "preg_dia", 
-  "preg_ht", "ga_bin_f", "ppd")
-
-)
-descriptives$categorical %>%
-  dplyr::filter(variable == "birth_month")
-
-tab1.vars <- c(
-  "birth_year_f", "birth_month_c",  "sex", "ethn3_m", "edu_m_0", "mat_age_f",  
-  "cohab", "parity_bin", "areases_tert", "prepreg_psych", "preg_dia", 
-  "preg_ht", "ga_bin_f", "ppd")
-
-table1 <- makeTable(
-  stats = descriptives,
-  cat_vars = tab1.vars) %>%
-  dplyr::filter(cohort == "combined") %>%
-  dplyr::select(-cohort) %>%
-  mutate(variable = case_when(
-    variable == "edu_m_0" & category == 1 ~ "high",
-    variable == "edu_m_0" & category == 2 ~ "medium",
-    variable == "edu_m_0" & category == 3 ~ "low", 
-    variable == "areases_tert" & category == 1 ~ "low",
-    variable == "areases_tert" & category == 2 ~ "medium",
-    variable == "areases_tert" & category == 3 ~ "high")) %>%
-  arrange(
-    factor(
-      variable, levels = tab1.vars, 
-      ordered = TRUE)
-)
-
-table1 %>% print(n = Inf)
-        
-
-
-write_csv(table2, path = here("tables", "table2.csv"))
 
 
 ################################################################################
@@ -327,28 +389,7 @@ table3 <- makeTable(
 write_csv(table3, path = here("tables", "table3.csv"))
 
 
-################################################################################
-# Table S4a: categorical descriptives by cohort  
-################################################################################
-table4a <- makeTable(
-  stats = descriptives,
-  cat_vars = tab2_cat.vars, 
-  cont_vars = tab2_cont.vars
-) %>%
-  dplyr::filter(cohort != "combined") %>%
-  dplyr::filter(is.na(med_range)) %>%
-  pivot_wider(
-    names_from = cohort,
-    values_from = n_perc) %>%
-  select(-med_range, -missing) %>%
-  arrange(
-    factor(
-      variable, levels = c(
-        "sex", "ethn3_m", "parity_bin", "areases_tert_preg"), 
-      ordered = TRUE)
-  )
 
-write_csv(table4a, path = here("tables", "table4a.csv"))
 
 ################################################################################
 # Table S4b: continuous descriptives by cohort  
@@ -371,7 +412,7 @@ table4b <- makeTable(
     med_range_inma_gip, missing_inma_gip, med_range_inma_sab, missing_inma_sab,
     med_range_moba, missing_moba, med_range_ninfea, missing_ninfea, 
     med_range_rhea, missing_rhea)                            
-                      
+
 write_csv(table4b, path = here("tables", "table4b.csv"))
 
 ################################################################################

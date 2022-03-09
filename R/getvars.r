@@ -6,10 +6,21 @@
 ## Email: t.cadman@bristol.ac.uk
 ################################################################################
 
+
+install_github("datashield/dsBaseClient", ref = "v6.1")
+
 library(remotes)
 install_github("timcadman/datashield-tim", lib = "~/R/userlib")
-install_github("lifecycle-project/ds-helper")
+
+withr::with_libpaths(new = "~/R/userlib", 
+                     devtools::install_github("lifecycle-project/ds-helper", 
+                                       ref = "new-function"))
+
+de <- function(){datashield.errors()}
+
 library(dsHelper)
+
+ls('package:dsHelper')
 
 ################################################################################
 # 1. Assign tables
@@ -21,14 +32,14 @@ nonrep.vars <- c(
   "birth_month", "birth_year", "eusilc_income_quintiles", "agebirth_m_y", 
   "ethn1_m", "ethn2_m", "ethn3_m", "coh_country", "preg_smk", "preg_alc", 
   "preg_cig", "preg_alc_unit", "breastfed_any", "breastfed_ever", "no2_preg", 
-  "pm25_preg", "lden_preg", "ndvi300_preg", "green_dist_preg", "blue_dist_preg", 
-  "cohort_id", "ppd", "preg_dia", "preg_ht", "ga_bj", "ga_us", "prepreg_dep", 
-  "prepreg_anx", "prepreg_psych", "preg_psych", "child_id", "child_no", 
-  "preg_no", "mother_id", "outcome", "con_anomalies", "bdens100_preg", 
-  "bdens300_preg", "fdensity300_preg", "frichness300_preg", 
-  "landuseshan300_preg", "walkability_mean_preg", "agrgr_preg", "natgr_preg", 
-  "urbgr_preg", "urb_area_id", "lden_c_preg", "greenyn300_preg", 
-  "blueyn300_preg", "popdens_preg", "pm10_preg")
+  "pm25_preg", "lden_preg", "ndvi100_preg", "ndvi300_preg", "ndvi500_preg", 
+  "green_dist_preg", "blue_dist_preg", "cohort_id", "ppd", "preg_dia", 
+  "preg_ht", "ga_bj", "ga_us", "prepreg_dep", "prepreg_anx", "prepreg_psych", 
+  "preg_psych", "child_id", "child_no", "preg_no", "mother_id", "outcome", 
+  "con_anomalies", "bdens100_preg", "bdens300_preg", "fdensity300_preg", 
+  "frichness300_preg", "landuseshan300_preg", "walkability_mean_preg", 
+  "agrgr_preg", "natgr_preg", "urbgr_preg", "urb_area_id", "lden_c_preg", 
+  "greenyn300_preg", "blueyn300_preg", "popdens_preg", "pm10_preg")
 
 yearrep.vars <- c(
   "child_id", "edu_m_", "areases_tert_", "areases_quint_", "fam_splitup", 
@@ -57,13 +68,13 @@ cohorts_tables <- bind_rows(
   tibble(
     cohort = "eden_nan",
     table = c(
-      "lc_eden_core_2_1.Project22_non_rep", 
-      "lc_eden_core_2_1.Project22_yearly_rep")),
+      "project22-eden/2_1_core_1_0/non_rep", 
+      "project22-eden/2_1_core_1_0/yearly_rep")),
   tibble(
     cohort = "eden_poit",
     table = c(
-      "lc_eden_core_2_1.Project22_non_rep", 
-      "lc_eden_core_2_1.Project22_yearly_rep")),
+      "project22-eden/2_1_core_1_0/non_rep", 
+      "project22-eden/2_1_core_1_0/yearly_rep")),
   tibble(
     cohort = "inma_gip",
     table = c(
@@ -98,6 +109,7 @@ cohorts_tables <- bind_rows(
 
 ## ---- Assign tables ----------------------------------------------------------
 cohorts_tables %>%
+  dplyr::filter(cohort %in% c("eden_nan", "eden_poit")) %>%
   pwalk(function(cohort, table, type){
     
     datashield.assign(
@@ -108,7 +120,7 @@ cohorts_tables %>%
   })
 
 ## ---- Check this has worked --------------------------------------------------
-ds.colnames("nonrep")
+ds.colnames("nonrep", datasources = conns["eden_nan"])
 ds.colnames("yearrep")
 
 ## ---- Save progress ----------------------------------------------------------
@@ -130,8 +142,6 @@ available <- list(
 available$nonrep %>% print(n = Inf)
 available$yearrep %>% print(n = Inf)
 
-save.image()
-
 ################################################################################
 # 3. Fill missing variables  
 ################################################################################
@@ -151,9 +161,8 @@ filled$nonrep %>% dplyr::filter(discrepancy == "yes")
 filled$yearrep %>% dplyr::filter(discrepancy == "yes")
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_2")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_2")
 conns  <- datashield.login(logindata, restore = "env_pnd_2")
-
 
 ################################################################################
 # 4. Remove lden for cohorts it shouldn't exist for  
@@ -193,9 +202,8 @@ ds.dataFrame(
   datasources = conns[wrong_noise]
 )
 
-
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_3")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_3")
 conns  <- datashield.login(logindata, restore = "env_pnd_3")
 
 ################################################################################
@@ -206,7 +214,7 @@ conns  <- datashield.login(logindata, restore = "env_pnd_3")
 
 ## Non-repeated
 filled$nonrep %>% 
-  dplyr::filter(dnbc == "factor") %>% 
+  dplyr::filter(eden_nan == "factor") %>% 
   pull(variable) %>%
   map(
     ~ds.asFactor(
@@ -215,7 +223,7 @@ filled$nonrep %>%
 
 ## Yearly-repeated
 filled$yearrep %>% 
-  dplyr::filter(dnbc == "factor") %>% 
+  dplyr::filter(eden_nan == "factor") %>% 
   pull(variable) %>%
   map(
     ~ds.asFactor(
@@ -227,13 +235,13 @@ filled$yearrep %>%
 ## Non-repeated
 dh.dropCols(
   df = "nonrep", 
-  vars = filled$nonrep %>% dplyr::filter(dnbc == "factor") %>% pull(variable), 
+  vars = filled$nonrep %>% dplyr::filter(eden_nan == "factor") %>% pull(variable), 
   type = "remove")
 
 ## Yearly-repeated
 dh.dropCols(
   df = "yearrep", 
-  vars = filled$yearrep %>% dplyr::filter(dnbc == "factor") %>% pull(variable), 
+  vars = filled$yearrep %>% dplyr::filter(eden_nan == "factor") %>% pull(variable), 
   type = "remove")
 
 
@@ -242,18 +250,18 @@ dh.dropCols(
 ## Non-repeated
 ds.dataFrame(
   x = c(
-    "nonrep", filled$nonrep %>% dplyr::filter(dnbc == "factor") %>% pull(variable)),
+    "nonrep", filled$nonrep %>% dplyr::filter(eden_nan == "factor") %>% pull(variable)),
   newobj = "nonrep")
 
 ## Yearly-repeated
 ds.dataFrame(
   x = c(
-    "yearrep", filled$yearrep %>% dplyr::filter(dnbc == "factor") %>% pull(variable)),
+    "yearrep", filled$yearrep %>% dplyr::filter(eden_nan == "factor") %>% pull(variable)),
   newobj = "yearrep")
 
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_4")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_4")
 conns  <- datashield.login(logindata, restore = "env_pnd_4")
 
 ################################################################################
@@ -271,7 +279,7 @@ ds.Boole(
 ds.asFactor("parity_bin", "parity_bin")
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_5")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_5")
 conns <- datashield.login(logindata, restore = "env_pnd_5")
 
 ################################################################################
@@ -301,7 +309,7 @@ season_ref %>%
 ds.asFactor("birth_month", "birth_month_f")
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_6")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_6")
 conns <- datashield.login(logindata, restore = "env_pnd_6")
 
 ################################################################################
@@ -309,14 +317,17 @@ conns <- datashield.login(logindata, restore = "env_pnd_6")
 ################################################################################
 ds.asNumeric("nonrep$birth_year", "birth_year_c")
 
+ds.table("birth_year_c")
+
 year_ref <- tibble(
   old_val = c(
-    1991, 1992, 1993, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 
+    1990, 1991, 1992, 1993, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 
     2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017),
   new_val = c(
-    "91_95", "91_95", "91_95", "96_00", "96_00", "96_00", "01_05", "01_05", 
-    "01_05", "01_05", "01_05", "05_11", "05_11", "05_11", "05_11", "05_11", 
-    "05_11", "05_11", "05_11", "05_11", "05_11", "05_11", "05_11")
+    "90_95", "90_95", "90_95", "90_95", "96_00", "96_00", "96_00", "96_00", 
+    "96_00", "01_05", "01_05", "01_05", "01_05", "01_05", "05_11", "05_11", 
+    "05_11", "05_11", "05_11", "05_11", "05_11", "05_11", "05_11", "05_11", 
+    "05_11", "05_11")
 )
 
 year_ref %>% 
@@ -334,7 +345,7 @@ year_ref %>%
 ds.asFactor("birth_year_c", "birth_year_f")
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_7")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_7")
 conns <- datashield.login(logindata, restore = "env_pnd_7")
 
 ################################################################################
@@ -344,14 +355,14 @@ ds.asNumeric("nonrep$agebirth_m_y", "mat_age")
 
 mat_age_ref <- tibble(
   old_val = c(
-    seq(16, 20, 1),
+    seq(15, 20, 1),
     seq(21, 25, 1), 
     seq(26, 30, 1), 
     seq(31, 35, 1), 
     seq(36, 40, 1), 
     c(seq(41, 50, 1), 55)),
   new_val = c(
-    rep("16_20", 5), 
+    rep("15_20", 6), 
     rep("21_25", 5), 
     rep("26_30", 5), 
     rep("31_35", 5),
@@ -374,7 +385,7 @@ mat_age_ref %>%
 ds.asFactor("mat_age", "mat_age_f")
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_8")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_8")
 conns <- datashield.login(logindata, restore = "env_pnd_8")
 
 ################################################################################
@@ -402,7 +413,7 @@ ds.Boole(
 ds.asFactor("ga_bin", "preterm")
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_9")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_9")
 conns <- datashield.login(logindata, restore = "env_pnd_9")
 
 ################################################################################
@@ -413,8 +424,9 @@ ds.dataFrame(
         "preterm"), 
   newobj = "nonrep")
 
+
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_10")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_10")
 conns <- datashield.login(logindata, restore = "env_pnd_10")
 
 ################################################################################
@@ -432,7 +444,7 @@ ds.dataFrame(
 )
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_11")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_11")
 conns <- datashield.login(logindata, restore = "env_pnd_11")
 
 ################################################################################
@@ -495,7 +507,7 @@ dh.renameVars(
   conns = conns)
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_12")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_12")
 conns <- datashield.login(logindata, restore = "env_pnd_12")
 
 ################################################################################
@@ -533,7 +545,7 @@ dh.renameVars(
   conns = conns)
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_13")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_13")
 conns <- datashield.login(logindata, restore = "env_pnd_13")
 
 ################################################################################
@@ -561,7 +573,7 @@ ds.merge(
 )
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_14")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_14")
 conns <- datashield.login(logindata, restore = "env_pnd_14")
 
 ################################################################################
@@ -587,7 +599,7 @@ ds.dataFrame(
   newobj = "env_pnd")
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_15")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_15")
 conns <- datashield.login(logindata, restore = "env_pnd_15")
 
 ################################################################################
@@ -611,12 +623,19 @@ tibble(
   })
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_16")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_16")
 conns <- datashield.login(logindata, restore = "env_pnd_16")
 
 ################################################################################
 # 18. Create cohort dummy variables  
 ################################################################################
+ds.dataFrameFill("env_pnd", "env_pnd")
+ds.asFactor("env_pnd$cohort_id", "cohort_id")
+dh.dropCols(df = "env_pnd", vars = "cohort_id", type = "remove")
+ds.dataFrame(x = c("env_pnd", "cohort_id"), newobj = "env_pnd")
+
+## ---- Save progress ----------------------------------------------------------
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_16a")
 
 ## ---- Get cohort codes -------------------------------------------------------
 coh_codes <- dh.getStats(
@@ -646,7 +665,6 @@ ref_codes <- bind_rows(coh_codes.tab, urb_codes.tab) %>%
     value = as.character(category)) %>%
   dplyr::select(dummy, value, ref_var)
 
-save.image("~/env-pnd/4-feb-22.RData")
 ## ---- Make dummy variable ----------------------------------------------------
 ref_codes %>%
   pmap(function(variable, dummy, value, ref_var){
@@ -666,7 +684,7 @@ ds.dataFrame(
 )
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_17")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_17")
 conns <- datashield.login(logindata, restore = "env_pnd_17")
 
 ################################################################################
@@ -695,7 +713,7 @@ ds.dataFrame(
 )
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_18")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_18")
 conns <- datashield.login(logindata, restore = "env_pnd_18")
 
 ################################################################################
@@ -727,7 +745,7 @@ ds.dataFrameSubset(
   newobj = "baseline_df")
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_19")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_19")
 conns <- datashield.login(logindata, restore = "env_pnd_19")
 
 ################################################################################
@@ -768,45 +786,81 @@ ds.Boole(
   na.assign = 0, 
   newobj = "some_vars")
 
+## ---- Create subset ----------------------------------------------------------
+ds.dataFrameSubset(
+  df.name = "baseline_df", 
+  V1.name = "some_vars", 
+  V2.name = "1", 
+  Boolean.operator = "==", 
+  keep.NAs = FALSE, 
+  newobj = "some_exp_out_df")
+
+ds.dim("some_exp_out_df")
+
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_20")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_20")
 conns <- datashield.login(logindata, restore = "env_pnd_20")
 
 ################################################################################
-# 22. Identify singletons & live births
+# 22. Restrict to live births
 ################################################################################
 
 ## ---- Set MoBa outcome as 1 --------------------------------------------------
 ds.rep(
   x1 = 1,
-  times = ds.dim("baseline_df", datasources = conns["moba"])[[1]][[1]] ,
+  times = ds.dim("some_exp_out_df", datasources = conns["moba"])[[1]][[1]] ,
   source.x1 = "clientside",
   source.times = "c",
   newobj = "outcome",
   datasources = conns["moba"])
 
 ds.make(
-  toAssign = "baseline_df$outcome",
+  toAssign = "some_exp_out_df$outcome",
   newobj = "outcome",
   datasources = conns[!names(conns) == c("moba")])
 
 ds.asFactor("outcome", "outcome")
 
 dh.dropCols(
-  df = "baseline_df",
+  df = "some_exp_out_df",
   vars = "outcome",
   type = "remove",
   conns = conns["moba"])
 
 ds.dataFrame(
-  x = c("baseline_df", "outcome"),
-  newobj = "baseline_df",
+  x = c("some_exp_out_df", "outcome"),
+  newobj = "some_exp_out_df",
   datasources = conns["moba"])
+
+## ---- Define cases meeting exclusion criteria --------------------------------
+ds.Boole(
+  V1 = "some_exp_out_df$outcome",
+  V2 = 1,
+  Boolean.operator = "==",
+  na.assign = "0",
+  newobj = "outcome_valid")
+
+## ---- Create subset ----------------------------------------------------------
+ds.dataFrameSubset(
+  df.name = "some_exp_out_df", 
+  V1.name = "outcome_valid", 
+  V2.name = "1", 
+  Boolean.operator = "==", 
+  keep.NAs = FALSE, 
+  newobj = "live_births_df")
+
+## ---- Save progress ----------------------------------------------------------
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_21")
+conns <- datashield.login(logindata, restore = "env_pnd_21")
+
+################################################################################
+# 23. Restrict to first borns
+################################################################################
 
 ## ---- Set all GEN-R child_no as 1 --------------------------------------------
 ds.rep(
   x1 = 1,
-  times = ds.dim("baseline_df", datasources = conns["genr"])[[1]][[1]],
+  times = ds.dim("live_births_df", datasources = conns["genr"])[[1]][[1]],
   source.x1 = "clientside",
   source.times = "c",
   newobj = "child_no",
@@ -815,72 +869,103 @@ ds.rep(
 ds.asInteger("child_no", "child_no", datasources = conns["genr"])
 
 dh.dropCols(
-  df = "baseline_df",
+  df = "live_births_df",
   vars = "child_no",
   type = "remove",
   conns = conns["genr"])
 
 ds.dataFrame(
-  x = c("baseline_df", "child_no"),
-  newobj = "baseline_df",
+  x = c("live_births_df", "child_no"),
+  newobj = "live_births_df",
   datasources = conns["genr"])
 
-## ---- Define cases meeting exclusion criteria ---------------------------------
 ds.Boole(
-  V1 = "baseline_df$outcome",
+  V1 = "live_births_df$child_no",
   V2 = 1,
   Boolean.operator = "==",
-  newobj = "outcome_valid")
-
-ds.Boole(
-  V1 = "baseline_df$child_no",
-  V2 = 1,
-  Boolean.operator = "==",
+  na.assign = "0",
   newobj = "child_no_valid")
 
-ds.make(
-  toAssign = "outcome_valid*child_no_valid",
-  newobj = "exclusions_valid")
-
-## ---- Define final valid cases -----------------------------------------------
-ds.make(
-  toAssign = "exclusions_valid*some_vars",
-  newobj = "valid")
-
-## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_21")
-conns <- datashield.login(logindata, restore = "env_pnd_21")
-
-################################################################################
-# 23. Create analysis dataset  
-################################################################################
-
-## ---- Drop variables we don't need -------------------------------------------
-var_index <- dh.findVarsIndex(
-  df = "baseline_df", 
-  vars = c(exp.vars, out.vars, cov.vars, other.vars), 
-  conns = conns)
-
-## ---- Subset based on valid cases and required variables ---------------------
-var_index %>%
-  imap(
-    ~ds.dataFrameSubset(
-      df.name = "baseline_df", 
-      V1.name = "valid", 
-      V2.name = "1", 
-      Boolean.operator = "==", 
-      keep.cols = .x,
-      keep.NAs = FALSE, 
-      newobj = "analysis_df", 
-      datasources = conns[.y]))
+## ---- Create subset ----------------------------------------------------------
+ds.dataFrameSubset(
+  df.name = "live_births_df", 
+  V1.name = "child_no_valid", 
+  V2.name = "1", 
+  Boolean.operator = "==", 
+  keep.NAs = FALSE, 
+  newobj = "analysis_df")
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_22")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_22")
 conns <- datashield.login(logindata, restore = "env_pnd_22")
+
+################################################################################
+# 24. Create excluded participants dataset
+################################################################################
+
+## ---- First create vector indicating membership of analysis_df ---------------
+dims <- ds.dim("analysis_df")
+
+length.ref <- tibble(
+  cohort = names(conns), 
+  length = dims %>% map(~.x[[1]]) %>% unlist() %>% head(-1) %>% as.character
+)
+
+length.ref %>%
+  pmap(function(cohort, length){
+    ds.rep(
+      x1 = 1,
+      times = length,
+      source.x1 = "clientside",
+      source.times = "c",
+      newobj = "case_def", 
+      datasources = conns[cohort])
+  })
+
+ds.dataFrame(
+  x = c("analysis_df$child_id", "case_def"),
+  newobj = "analysis_df_tmp"
+)
+
+## ---- Now merge this vector with baseline_df ---------------------------------
+ds.merge(
+  x.name = "baseline_df",
+  y.name = "analysis_df_tmp",
+  by.x = "child_id",
+  by.y = "child_id",
+  all.x = TRUE,
+  all.y = TRUE, 
+  newobj = "exc_tmp")
+
+## ---- Transform case_def to binary vector ------------------------------------
+ds.Boole(
+  V1 = "exc_tmp$case_def", 
+  V2 = 1, 
+  Boolean.operator = "==", 
+  na.assign = "0", 
+  newobj = "almost_there"
+)
+
+## ---- Create excluded subset based on this vector ----------------------------
+ds.dataFrameSubset(
+  df.name = "baseline_df", 
+  V1.name = "almost_there", 
+  V2.name = "0", 
+  Boolean.operator = "==", 
+  keep.NAs = FALSE, 
+  newobj = "excluded_df")
+
+ds.dim("excluded_df")
+
+## ---- Save progress ----------------------------------------------------------
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_24")
+conns <- datashield.login(logindata, restore = "env_pnd_24")
 
 ################################################################################
 # 24. Create IQR versions of variables  
 ################################################################################
+ds.dataFrameFill("analysis_df", "analysis_df")
+
 iqr.vars <- bind_rows(exp_preg.ref, exp_year_1.ref) %>%
   dplyr::filter(type == "cont") %>%
   pull(variable)
@@ -896,100 +981,305 @@ dh.makeIQR(
   type = "combine")
 
 ## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_23")
-conns <- datashield.login(logindata, restore = "env_pnd_23")
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_25")
+conns <- datashield.login(logindata, restore = "env_pnd_25")
 
 ################################################################################
-# 25. Create excluded participants dataset
-################################################################################
-ds.dataFrameSubset(
-  df.name = "baseline_df", 
-  V1.name = "valid", 
-  V2.name = "0", 
-  Boolean.operator = "==", 
-  keep.NAs = FALSE, 
-  newobj = "excluded_df")
-
-## ---- Save progress ----------------------------------------------------------
-datashield.workspace_save(conns, "env_pnd_24")
-conns <- datashield.login(logindata, restore = "env_pnd_24")
-
-
-
-
-################################################################################
-# 18. Create quartiles of continuous variables
+# 25. Create quartiles of continuous variables
 ################################################################################
 
-## ---- NDVI -------------------------------------------------------------------
-
-## Combined
+## ---- NO2 --------------------------------------------------------------------
 dh.quartileSplit(
   df = "analysis_df",
-  var = "ndvi300_preg_iqr_p",
-  type = "combine",
+  var = "no2_preg_iqr_c",
+  type = "split",
   band_action = "ge_l",
   var_suffix = "_q_c_")
 
-## Split
+## ---- PM2.5 ------------------------------------------------------------------
+dh.quartileSplit(
+  df = "analysis_df",
+  var = "pm25_preg_iqr_c",
+  type = "split",
+  band_action = "ge_l",
+  var_suffix = "_q_c_")
+
+## ---- PM10 -------------------------------------------------------------------
+dh.quartileSplit(
+  df = "analysis_df",
+  var = "pm10_preg_iqr_c",
+  type = "split",
+  band_action = "ge_l",
+  var_suffix = "_q_c_")
+
+## ---- NDVI -------------------------------------------------------------------
 dh.quartileSplit(
   df = "analysis_df",
   var = "ndvi300_preg_iqr_c",
   type = "split",
   band_action = "ge_l",
-  var_suffix = "_q_s_")
+  var_suffix = "_q_c_")
 
-## ---- NO2 --------------------------------------------------------------------
-
-## Combined
+## ---- Facility richness ------------------------------------------------------
 dh.quartileSplit(
   df = "analysis_df",
-  var = "no2_preg_iqr_p",
-  type = "combine",
+  var = "frichness300_preg_iqr_c",
+  type = "split",
   band_action = "ge_l",
   var_suffix = "_q_c_")
 
-## Split
+## ---- Walkability ------------------------------------------------------------
 dh.quartileSplit(
   df = "analysis_df",
-  var = "no2_preg_iqr_c",
-  type = "combine",
+  var = "walkability_mean_preg_iqr_c",
+  type = "split",
   band_action = "ge_l",
-  var_suffix = "_q_s_")
-## ---- PM2.5 ------------------------------------------------------------------
-
-## Combined
-
-## Split
-
-## ---- PM10 -------------------------------------------------------------------
-
-## Combined
-
-## Split
-
-## ---- Facility richness  -----------------------------------------------------
-
-## Combined
-
-## Split
-
-## ---- Walkability ------------------------------------------------------------
-
-## Combined
-
-## Split
+  var_suffix = "_q_c_")
 
 ## ---- Population density -----------------------------------------------------
+dh.quartileSplit(
+  df = "analysis_df",
+  var = "popdens_preg_iqr_c",
+  type = "split",
+  band_action = "ge_l",
+  var_suffix = "_q_c_")
 
-## Combined
+## ---- Fill dataframes --------------------------------------------------------
+ds.dataFrameFill("analysis_df", "analysis_df")
 
-## Split
+## ---- Save progress ----------------------------------------------------------
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_26")
+conns <- datashield.login(logindata, restore = "env_pnd_26")    
+
+################################################################################
+# SENSITIVITY SUBSETS
+################################################################################
+################################################################################
+# 26. First time mothers
+################################################################################
+
+## ---- Identify available data ------------------------------------------------
+parity_avail <- dh.anyData(
+  df = "analysis_df", 
+  vars = "parity_m")
+
+## ---- Subset -----------------------------------------------------------------
+ds.dataFrameSubset(
+  df.name = "analysis_df", 
+  V1.name = "analysis_df$parity_bin", 
+  V2.name = "0", 
+  Boolean.operator = "==", 
+  keep.NAs = FALSE, 
+  newobj = "parity_df")
+
+## ---- Save progress ----------------------------------------------------------
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_27")
+conns <- datashield.login(logindata, restore = "env_pnd_27")  
+
+################################################################################
+# 27. Pregnancies free from comorbidities
+################################################################################
+
+## ---- Identify cases with any comorbidity ------------------------------------
+
+## Pregnancy diabetes
+ds.Boole(
+  V1 = "analysis_df$preg_dia", 
+  V2 = 1,
+  Boolean.operator = "==", 
+  na.assign = "0", 
+  newobj = "preg_dia_y")
+
+## Pregnancy hypertension
+ds.Boole(
+  V1 = "analysis_df$preg_ht", 
+  V2 = 1,
+  Boolean.operator = "==", 
+  na.assign = "0", 
+  newobj = "preg_ht_y")
+
+## Preterm birth - note 1 = term.
+ds.Boole(
+  V1 = "analysis_df$preterm", 
+  V2 = 0,
+  Boolean.operator = "==", 
+  na.assign = "0", 
+  newobj = "preterm_y")
+
+## ---- Create composite variable indicating how many comorbidities ------------
+ds.assign(
+  toAssign = "preg_dia_y+preg_ht_y+preterm_y", 
+  newobj = "n_comorb"
+)
+
+## ---- Create variable indicating mothers with at least one -------------------
+ds.Boole(
+  V1 = "n_comorb", 
+  V2 = 0,
+  Boolean.operator = ">", 
+  na.assign = "0", 
+  newobj = "some_comorb")
+
+## ---- Create subset ----------------------------------------------------------
+ds.dataFrameSubset(
+  df.name = "analysis_df", 
+  V1.name = "some_comorb", 
+  V2.name = "0", 
+  Boolean.operator = "==", 
+  keep.NAs = FALSE, 
+  newobj = "no_comorbid_df")
+
+## ---- Save progress ----------------------------------------------------------
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_28")
+conns <- datashield.login(logindata, restore = "env_pnd_28")  
+
+################################################################################
+# 28. No history of depression
+################################################################################
+
+## ---- Identify available data ------------------------------------------------
+dep_avail <- dh.anyData(
+  df = "analysis_df", 
+  vars = c("prepreg_psych", "prepreg_dep"))
+
+## ---- Create variable indicating yes for either ------------------------------
+
+## Depression
+ds.Boole(
+  V1 = "analysis_df$prepreg_dep", 
+  V2 = 1,
+  Boolean.operator = "==", 
+  na.assign = "0", 
+  newobj = "dep_y")
+
+## Psychiatric problems
+ds.Boole(
+  V1 = "analysis_df$prepreg_psych", 
+  V2 = 1,
+  Boolean.operator = "==", 
+  na.assign = "0", 
+  newobj = "psych_y")
+
+## ---- Create variable indicating mothers with at least one -------------------
+ds.assign(
+  toAssign = "dep_y+psych_y", 
+  newobj = "dep_psych_n"
+)
+
+## ---- Create variable indicating mothers with at least one -------------------
+ds.Boole(
+  V1 = "dep_psych_n", 
+  V2 = 0,
+  Boolean.operator = ">", 
+  na.assign = "0", 
+  newobj = "dep_psych_any")
+
+## ---- Create subset ----------------------------------------------------------
+ds.dataFrameSubset(
+  df.name = "analysis_df", 
+  V1.name = "dep_psych_any", 
+  V2.name = "0", 
+  Boolean.operator = "==", 
+  keep.NAs = FALSE, 
+  newobj = "no_dep_psych_df")
+
+## ---- Save progress ----------------------------------------------------------
+datashield.workspace_save(conns[c("eden_nan", "eden_poit")], "env_pnd_29")
+conns <- datashield.login(logindata, restore = "env_pnd_29")  
+
+################################################################################
+# 30. Fix areases in eden
+################################################################################
+eden_coh <- c("eden_nan", "eden_poit")
+
+## ---- Assign variables again -------------------------------------------------
+cohorts_tables %>%
+  dplyr::filter(cohort %in% eden_coh & type == "nonrep") %>%
+  pwalk(function(cohort, table, type){
+    
+    datashield.assign(
+      conns = conns[cohort], 
+      symbol = "area_ses", 
+      value = table, 
+      variables = c("child_id", "areases_tert_preg"))
+  })
+
+## ---- Rename new var ---------------------------------------------------------
+ds.assign(
+  toAssign = "area_ses$areases_tert_preg", 
+  newobj = "areases_tert",
+  datasources = conns[eden_coh]) 
+
+## ---- Remove old empty vars --------------------------------------------------
+dh.dropCols(
+  df = "area_ses", 
+  vars = "areases_tert_preg", 
+  conns = conns[eden_coh], 
+  type = "remove"
+)
+
+dh.dropCols(
+  df = "analysis_df", 
+  vars = "areases_tert", 
+  conns = conns[eden_coh], 
+  type = "remove"
+)
+
+## ---- Join back in -----------------------------------------------------------
+ds.dataFrame(
+  x = c("area_ses", "areases_tert"), 
+  newobj = "area_ses",
+  datasources = conns[eden_coh])
+
+## ---- Merge with main data ---------------------------------------------------
+ds.merge(
+  x.name = "analysis_df", 
+  y.name = "area_ses", 
+  by.x.names = "child_id", 
+  by.y.names = "child_id", 
+  all.x = TRUE,
+  newobj = "analysis_df", 
+  datasources = conns[eden_coh])
+
+## ---- Check ------------------------------------------------------------------
+ds.colnames("analysis_df", datasources = conns[eden_coh])
+ds.summary("analysis_df$areases_tert", datasources = conns[eden_coh])
+
+## ---- Save progress ----------------------------------------------------------
+datashield.workspace_save(conns, "env_pnd_30")
+
+
+
+################################################################################
+# 30. Additional recodes
+################################################################################
+
+## ---- Binary variable for income ---------------------------------------------
+
+## ---- Binary variable for ethnicity ------------------------------------------
+ds.recodeValues(
+  var.name = "analysis_df$ethn3_m",
+  values2replace.vector = seq(1, 3, 1),
+  new.values.vector = c(0, 1, 1),
+  newobj = "eth_bin", 
+  datasources = conns[!names(conns) %in% c("dnbc", "moba", "ninfea")])
+
+ds.dataFrameFill("analysis_df", "analysis_df")
+
+## ---- Save progress ----------------------------------------------------------
+datashield.workspace_save(conns, "env_pnd_30")
+conns <- datashield.login(logindata, restore = "env_pnd_30")  
+
+ds.table("eth_bin", 
+         datasources = conns[!conns %in% c("dnbc", "moba", "rhea")])
+
+ds.summary("analysis_df$ethn3_m")
 
 
 
 
-
-
-
-
+        
+        
+        
+        
+        
