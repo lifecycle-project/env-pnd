@@ -1,0 +1,121 @@
+full_name,cat_label,value,sample
+Area deprivation,Low deprivation,11850 (26.01),analysis
+Area deprivation,Medium deprivation,11261 (24.72),analysis
+Area deprivation,High deprivation,22441 (49.26),analysis
+Birth season,Spring,11091 (22.77),analysis
+Birth season,Summer,11759 (24.14),analysis
+Birth season,Autumn,13569 (27.86),analysis
+Birth season,Winter,12293 (25.24),analysis
+Birth year,1990 - 1995,9675 (20.1),analysis
+Birth year,1996 - 2000,3785 (7.86),analysis
+Birth year,2001 - 2005,12104 (25.15),analysis
+Birth year,2006 - 2011,22565 (46.88),analysis
+Blue space > 5000m2 within 300m,No,40513 (86.4),analysis
+Blue space > 5000m2 within 300m,Yes,6378 (13.6),analysis
+Maternal cohabitation at birth,No,25471 (95.62),analysis
+Maternal cohabitation at birth,Yes,1168 (4.38),analysis
+Maternal education,High,21032 (47.84),analysis
+Maternal education,Medium,13722 (31.21),analysis
+Maternal education,Low,9210 (20.95),analysis
+Maternal ethnicity,Western European,20099 (71.08),analysis
+Maternal ethnicity,Non-western European,7438 (26.31),analysis
+Maternal ethnicity,Mixed,738 (2.61),analysis
+Income,First quintile,6976 (16.92),analysis
+Income,Second quintile,7177 (17.41),analysis
+Income,Third quintile,7954 (19.29),analysis
+Income,Fourth quintile,10336 (25.07),analysis
+Income,Fifth quintile,8781 (21.3),analysis
+Facility richness,NA,"0.09 (0.01,0.25)",analysis
+Green space > 5000m2 within 300m,No,12896 (27.11),analysis
+Green space > 5000m2 within 300m,Yes,34680 (72.89),analysis
+Lden,<55 dB,20015 (46.97),analysis
+Lden,55-55.9 dB,11854 (27.82),analysis
+Lden,60-64.9 dB,6675 (15.66),analysis
+Lden,65-69.9 dB,2899 (6.8),analysis
+Lden,>70 dB,1169 (2.74),analysis
+Maternal age at birth,15 - 20,2048 (4.22),analysis
+Maternal age at birth,21 - 25,8003 (16.49),analysis
+Maternal age at birth,26 - 30,17422 (35.89),analysis
+Maternal age at birth,31 - 35,15147 (31.2),analysis
+Maternal age at birth,36 - 40,5283 (10.88),analysis
+Maternal age at birth,41 - 45,642 (1.32),analysis
+NDVI,NA,"0.41 (0.26,0.57)",analysis
+NO2,NA,"29.23 (21.06,39.69)",analysis
+Parity,Nulliparous,40096 (83.54),analysis
+Parity,Not nulliparous,7899 (16.46),analysis
+PM10,NA,"19.66 (15.63,25.85)",analysis
+PM2.5,NA,"13.99 (11.27,16.91)",analysis
+Population density,NA,"5915.99 (1591.04,16841.07)",analysis
+Postpartum depression,No,44933 (91.6),analysis
+Postpartum depression,Yes,4119 (8.4),analysis
+Gestational diabetes,No,39391 (96.66),analysis
+Gestational diabetes,Yes,1361 (3.34),analysis
+Pregnancy hypertension,No,39652 (91.76),analysis
+Pregnancy hypertension,Yes,3560 (8.24),analysis
+Maternal pre-pregnancy psychiatric conditions,No,30679 (87.72),analysis
+Maternal pre-pregnancy psychiatric conditions,Yes,4295 (12.28),analysis
+Pre-term birth,No,2619 (5.35),analysis
+Pre-term birth,Yes,46363 (94.65),analysis
+Child sex,Male,25067 (51.1),analysis
+Child sex,Female,23984 (48.9),analysis
+Walkability score,NA,"0.32 (0.23,0.46)",analysis
+Area deprivation,Low deprivation,3541 (26.69),excluded
+Area deprivation,Medium deprivation,3166 (23.86),excluded
+Area deprivation,High deprivation,6560 (49.45),excluded
+Birth season,Spring,4884 (23.7),excluded
+Birth season,Summer,5133 (24.91),excluded
+Birth season,Autumn,5362 (26.02),excluded
+Birth season,Winter,5231 (25.38),excluded
+Birth year,1990 - 1995,4184 (19.11),excluded
+Birth year,1996 - 2000,4933 (22.53),excluded
+Birth year,2001 - 2005,8146 (37.2),excluded
+Birth year,2006 - 2011,4636 (21.17),excluded
+Blue space > 5000m2 within 300m,No,10890 (76.67),excluded
+Blue space > 5000m2 within 300m,Yes,3314 (23.33),excluded
+Maternal cohabitation at birth,No,6181 (94.73),excluded
+Maternal cohabitation at birth,Yes,344 (5.27),excluded
+Maternal education,High,8926 (49.45),excluded
+Maternal education,Medium,6151 (34.08),excluded
+Maternal education,Low,2974 (16.48),excluded
+Maternal ethnicity,Western European,5067 (65.04),excluded
+Maternal ethnicity,Non-western European,2359 (30.28),excluded
+Maternal ethnicity,Mixed,365 (4.68),excluded
+Income,First quintile,3274 (21.51),excluded
+Income,Second quintile,2776 (18.24),excluded
+Income,Third quintile,2583 (16.97),excluded
+Income,Fourth quintile,3339 (21.94),excluded
+Income,Fifth quintile,3247 (21.34),excluded
+Facility richness,NA,"0.1 (0.01,0.28)",excluded
+Green space > 5000m2 within 300m,No,3916 (27.2),excluded
+Green space > 5000m2 within 300m,Yes,10482 (72.8),excluded
+Lden,<55 dB,5841 (44.4),excluded
+Lden,55-55.9 dB,3147 (23.92),excluded
+Lden,60-64.9 dB,2495 (18.97),excluded
+Lden,65-69.9 dB,1186 (9.02),excluded
+Lden,>70 dB,485 (3.69),excluded
+Maternal age at birth,15 - 20,676 (3.45),excluded
+Maternal age at birth,21 - 25,2865 (14.62),excluded
+Maternal age at birth,26 - 30,6863 (35.01),excluded
+Maternal age at birth,31 - 35,6614 (33.74),excluded
+Maternal age at birth,36 - 40,2291 (11.69),excluded
+Maternal age at birth,41 - 45,293 (1.49),excluded
+NDVI,NA,"0.37 (0.24,0.53)",excluded
+NO2,NA,"36.71 (27.2,49.32)",excluded
+Parity,Nulliparous,17774 (87.13),excluded
+Parity,Not nulliparous,2625 (12.87),excluded
+PM10,NA,"28.37 (22.71,37.88)",excluded
+PM2.5,NA,"17.41 (14.07,21.21)",excluded
+Population density,NA,"6196.12 (2119.46,13764.63)",excluded
+Postpartum depression,No,4694 (87.79),excluded
+Postpartum depression,Yes,653 (12.21),excluded
+Gestational diabetes,No,18891 (98.44),excluded
+Gestational diabetes,Yes,300 (1.56),excluded
+Pregnancy hypertension,No,12182 (90.78),excluded
+Pregnancy hypertension,Yes,1237 (9.22),excluded
+Maternal pre-pregnancy psychiatric conditions,No,14462 (87.12),excluded
+Maternal pre-pregnancy psychiatric conditions,Yes,2139 (12.88),excluded
+Pre-term birth,No,1707 (8.02),excluded
+Pre-term birth,Yes,19588 (91.98),excluded
+Child sex,Male,10162 (50.12),excluded
+Child sex,Female,10115 (49.88),excluded
+Walkability score,NA,"0.35 (0.25,0.48)",excluded

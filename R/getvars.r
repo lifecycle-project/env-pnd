@@ -6,22 +6,6 @@
 ## Email: t.cadman@bristol.ac.uk
 ################################################################################
 
-
-install_github("datashield/dsBaseClient", ref = "v6.1")
-
-library(remotes)
-install_github("timcadman/datashield-tim", lib = "~/R/userlib")
-
-withr::with_libpaths(new = "~/R/userlib", 
-                     devtools::install_github("lifecycle-project/ds-helper", 
-                                       ref = "new-function"))
-
-de <- function(){datashield.errors()}
-
-library(dsHelper)
-
-ls('package:dsHelper')
-
 ################################################################################
 # 1. Assign tables
 ################################################################################

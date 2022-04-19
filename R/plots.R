@@ -1054,4 +1054,146 @@ text(-2.69, 23.3, "PM2.5", cex = 0.6, font = 2)
 text(-2.70, 9.3, "PM10", cex = 0.6, font = 2)
 
 
+################################################################################
+# Extra plots Marie requested for air pollution quartiles
+################################################################################
+################################################################################
+# Data prep
+################################################################################
+no2_quart.vars <- c(
+  "no2_preg_iqr_c_q_c_1", "no2_preg_iqr_c_q_c_2", "no2_preg_iqr_c_q_c_3", 
+  "no2_preg_iqr_c_q_c_4")
+
+pm25_quart.vars <- c(
+  "pm25_preg_iqr_c_q_c_1", "pm25_preg_iqr_c_q_c_2", "pm25_preg_iqr_c_q_c_3", 
+  "pm25_preg_iqr_c_q_c_4")
+
+pm10_quart.vars <- c(
+  "pm10_preg_iqr_c_q_c_1", "pm10_preg_iqr_c_q_c_2", "pm10_preg_iqr_c_q_c_3", 
+  "pm10_preg_iqr_c_q_c_4")
+
+big_coh <- c("")
+
+quart_coh.pdata <- prepMainPlot(
+  mdata = quart.mdata, 
+  ref = exp_quart.ref, 
+  levels = unique(exp_quart.ref$full_name)) %>%
+  dplyr::filter(cohort != "combined") %>%
+  separate(
+    col = exposure, 
+    into = c("exposure", "quantile"), 
+    sep = "_(?!.*_)") %>%
+  mutate(full_name = as.character(full_name)) %>%
+  arrange(cohort, quartile) %>%
+  mutate(cohort_neat = ifelse(
+    quantile %in% 2:4, "", cohort_neat)) 
+
+################################################################################
+# NO2
+################################################################################
+no2_quart_coh.pdata <- quart_coh.pdata %>% 
+  dplyr::filter(exposure %in% "no2_preg_iqr_c_q_c") 
+
+png(
+  file = here("figures", "quart_coh_no2.png"), 
+  width = word_land, 
+  height = 30, 
+  units = "cm",
+  res = 300)
+
+par(mar=c(5,0,0,0))
+
+quart_cols <- c("black", palette_std[c(2, 5, 3)])
+
+forestWrap(
+  coefs = no2_quart_coh.pdata,
+  col_1 = "cohort_neat", 
+  header = c("Cohort", "OR [95% CI]"),
+  ylim = c(0, 68), 
+  xlim = c(-6, 6),
+  alim = c(-0, 16),
+  steps = 5, 
+  ilab.xpos = c(nsub.pos), 
+  ilab =  cbind(
+    no2_quart_coh.pdata %>% pull(valid_n)),
+  rows = rev(c(1:4, 7:10, 13:16, 19:22, 25:28, 31:34, 37:40, 43:46, 49:52, 55:58, 61:64)), 
+  cex = 1)
+
+text(nsub.pos, 67, "N", cex = 1, font = 2)
+
+dev.off()
+
+################################################################################
+# PM2.5
+################################################################################
+pm25_quart_coh.pdata <- quart_coh.pdata %>% 
+  dplyr::filter(exposure %in% "pm25_preg_iqr_c_q_c" & !cohort %in% c("inma_gip", "inma_sab")) 
+
+png(
+  file = here("figures", "quart_coh_pm25.png"), 
+  width = word_land, 
+  height = 30, 
+  units = "cm",
+  res = 300)
+
+par(mar=c(5,0,0,0))
+
+quart_cols <- c("black", palette_std[c(2, 5, 3)])
+
+forestWrap(
+  coefs = pm25_quart_coh.pdata,
+  col_1 = "cohort_neat", 
+  header = c("Cohort", "OR [95% CI]"),
+  ylim = c(0, 56), 
+  xlim = c(-3, 6),
+  alim = c(-0, 4),
+  steps = 5, 
+  ilab.xpos = c(nsub.pos), 
+  ilab =  cbind(
+    pm25_quart_coh.pdata %>% pull(valid_n)),
+  rows = rev(c(1:4, 7:10, 13:16, 19:22, 25:28, 31:34, 37:40, 43:46, 49:52)), 
+  cex = 1)
+
+text(nsub.pos, 55, "N", cex = 1, font = 2)
+
+dev.off()
+
+
+################################################################################
+# PM10
+################################################################################
+pm10_quart_coh.pdata <- quart_coh.pdata %>% 
+  dplyr::filter(exposure %in% "pm10_preg_iqr_c_q_c" & !cohort %in% 
+                  c("eden_nan", "eden_poit", "inma_sab")) 
+
+png(
+  file = here("figures", "quart_coh_pm10.png"), 
+  width = word_land, 
+  height = 30, 
+  units = "cm",
+  res = 300)
+
+par(mar=c(5,0,0,0))
+
+quart_cols <- c("black", palette_std[c(2, 5, 3)])
+
+forestWrap(
+  coefs = pm10_quart_coh.pdata,
+  col_1 = "cohort_neat", 
+  header = c("Cohort", "OR [95% CI]"),
+  ylim = c(0, 26), 
+  xlim = c(-3, 6),
+  alim = c(-0, 4),
+  steps = 5, 
+  ilab.xpos = c(nsub.pos), 
+  ilab =  cbind(
+    pm10_quart_coh.pdata %>% pull(valid_n)),
+  rows = rev(c(1:4, 7:10, 13:16, 19:22)), 
+  cex = 1)
+
+text(nsub.pos, 25, "N", cex = 1, font = 2)
+
+dev.off()
+
+
 
